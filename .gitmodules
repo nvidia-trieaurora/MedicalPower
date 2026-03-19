@@ -1,0 +1,6 @@
+[submodule "vendor/ohif-viewers"]
+	path = vendor/ohif-viewers
+	url = https://github.com/OHIF/Viewers.git
+[submodule "vendor/monai-label"]
+	path = vendor/monai-label
+	url = https://github.com/Project-MONAI/MONAILabel.git

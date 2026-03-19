@@ -1,0 +1,32 @@
+{
+  "extensions": [
+    {
+      "packageName": "@ohif/extension-default"
+    },
+    {
+      "packageName": "@ohif/extension-cornerstone"
+    },
+    {
+      "packageName": "@ohif/extension-cornerstone-dicom-sr"
+    },
+    {
+      "packageName": "@ohif/extension-cornerstone-dicom-seg"
+    },
+    {
+      "packageName": "@ohif/extension-measurement-tracking"
+    },
+    {
+      "packageName": "@ohif/extension-monai-label",
+      "version": "0.8.5"
+    }
+  ],
+  "modes": [
+    {
+      "packageName": "@ohif/mode-longitudinal"
+    },
+    {
+      "packageName": "@ohif/mode-monai-label",
+      "version": "0.8.5"
+    }
+  ]
+}

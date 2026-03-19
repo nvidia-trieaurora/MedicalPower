@@ -1,0 +1,10 @@
+{
+  "name": "@medicalpower/mode-annotation",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OHIF mode for MedicalPower annotation workflow with MONAI Label integration",
+  "main": "src/index.ts",
+  "peerDependencies": {
+    "@ohif/core": "^3.12.0"
+  }
+}

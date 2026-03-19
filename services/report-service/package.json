@@ -1,0 +1,13 @@
+{
+  "name": "@medicalpower/report-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Diagnostic report generation, FHIR export, PDF generation",
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/main",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
+    "test": "jest"
+  }
+}

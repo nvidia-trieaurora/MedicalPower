@@ -1,0 +1,12 @@
+{
+  "name": "@medicalpower/admin-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MedicalPower admin console — tenant, user, role, taxonomy management",
+  "scripts": {
+    "dev": "next dev --port 3002",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "@medicalpower/extension-task-context",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OHIF extension to receive task/case context from MedicalPower portal deep-links",
+  "main": "src/index.ts",
+  "peerDependencies": {
+    "@ohif/core": "^3.12.0"
+  }
+}

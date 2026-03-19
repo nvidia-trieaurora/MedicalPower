@@ -1,0 +1,13 @@
+{
+  "name": "@medicalpower/integration-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FHIR gateway, PACS connectivity, webhook management",
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/main",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
+    "test": "jest"
+  }
+}

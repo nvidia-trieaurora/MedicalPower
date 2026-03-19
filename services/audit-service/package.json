@@ -1,0 +1,13 @@
+{
+  "name": "@medicalpower/audit-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Immutable audit trail, event ingestion, compliance reporting",
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/main",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
+    "test": "jest"
+  }
+}

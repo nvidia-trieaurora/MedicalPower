@@ -1,0 +1,172 @@
+version: "3.9"
+
+services:
+  # ============================================================
+  # DATABASE
+  # ============================================================
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: mp_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mp_secret_dev}
+      POSTGRES_DB: medicalpower
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mp_admin -d medicalpower"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================
+  # CACHE / LOCKING
+  # ============================================================
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD:-mp_redis_dev}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-mp_redis_dev}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================
+  # MESSAGE QUEUE
+  # ============================================================
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: mp_user
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-mp_rabbit_dev}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ============================================================
+  # OBJECT STORAGE
+  # ============================================================
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-mp_minio_dev}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-mp_minio_secret_dev}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ============================================================
+  # DICOM BACKEND
+  # ============================================================
+  orthanc:
+    image: orthancteam/orthanc:24.12.1
+    ports:
+      - "8042:8042"
+      - "4242:4242"
+    volumes:
+      - orthanc_data:/var/lib/orthanc/db
+      - ../orthanc/orthanc.json:/etc/orthanc/orthanc.json
+    environment:
+      ORTHANC__POSTGRESQL__HOST: postgres
+      ORTHANC__POSTGRESQL__PORT: 5432
+      ORTHANC__POSTGRESQL__DATABASE: orthanc
+      ORTHANC__POSTGRESQL__USERNAME: mp_admin
+      ORTHANC__POSTGRESQL__PASSWORD: ${POSTGRES_PASSWORD:-mp_secret_dev}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8042/system"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ============================================================
+  # AUTHENTICATION
+  # ============================================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin_dev}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: mp_admin
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-mp_secret_dev}
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../keycloak/realm-export.json:/opt/keycloak/data/import/medicalpower-realm.json
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '\"status\":\"UP\"'"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # ============================================================
+  # AI INFERENCE (GPU — optional profile)
+  # ============================================================
+  monai-label:
+    image: projectmonai/monailabel:latest
+    command: >
+      monailabel start_server
+      --app /app/apps/radiology
+      --studies http://orthanc:8042/dicom-web
+      --conf models segmentation
+      --port 8000
+      --host 0.0.0.0
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      MONAI_LABEL_DICOMWEB_USERNAME: ""
+      MONAI_LABEL_DICOMWEB_PASSWORD: ""
+    ports:
+      - "8000:8000"
+    volumes:
+      - monai_data:/app/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    depends_on:
+      orthanc:
+        condition: service_healthy
+    profiles:
+      - gpu
+
+volumes:
+  pg_data:
+  redis_data:
+  rabbitmq_data:
+  minio_data:
+  orthanc_data:
+  monai_data:

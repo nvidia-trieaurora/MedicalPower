@@ -1,0 +1,48 @@
+{
+  "Name": "MedicalPower Orthanc",
+  "RemoteAccessAllowed": true,
+  "AuthenticationEnabled": false,
+
+  "DicomPort": 4242,
+  "HttpPort": 8042,
+
+  "DicomWeb": {
+    "Enable": true,
+    "Root": "/dicom-web/",
+    "EnableWado": true,
+    "WadoRoot": "/wado",
+    "Host": "orthanc",
+    "Ssl": false,
+    "StowMaxInstances": 10,
+    "StowMaxSize": 10
+  },
+
+  "PostgreSQL": {
+    "EnableIndex": true,
+    "EnableStorage": false,
+    "Host": "postgres",
+    "Port": 5432,
+    "Database": "orthanc",
+    "Username": "mp_admin",
+    "Password": "mp_secret_dev",
+    "Lock": false
+  },
+
+  "StableAge": 5,
+  "StorageCompression": false,
+  "MaximumStorageSize": 0,
+  "MaximumPatientCount": 0,
+  "LimitFindResults": 100,
+  "LimitFindInstances": 100,
+
+  "DicomModalities": {},
+  "OrthancPeers": {},
+
+  "ConcurrentJobs": 2,
+  "HttpThreadsCount": 50,
+
+  "Plugins": [
+    "/usr/share/orthanc/plugins/libOrthancDicomWeb.so",
+    "/usr/share/orthanc/plugins/libOrthancPostgreSQLIndex.so"
+  ]
+}

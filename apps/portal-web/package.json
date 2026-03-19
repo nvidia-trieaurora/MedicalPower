@@ -1,0 +1,12 @@
+{
+  "name": "@medicalpower/portal-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MedicalPower web portal — patient, case, task management",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  }
+}

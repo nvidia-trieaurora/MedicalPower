@@ -1,0 +1,141 @@
+{
+  "realm": "medicalpower",
+  "enabled": true,
+  "displayName": "MedicalPower",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+
+  "roles": {
+    "realm": [
+      { "name": "system_admin", "description": "Full system access" },
+      { "name": "org_admin", "description": "Organization-level management" },
+      { "name": "clinical_lead", "description": "Case management, assignment" },
+      { "name": "radiologist", "description": "View, annotate, diagnose, review" },
+      { "name": "annotator", "description": "View, annotate, submit" },
+      { "name": "qa_reviewer", "description": "Review, approve/reject" },
+      { "name": "data_scientist", "description": "Model management, training" },
+      { "name": "integration_engineer", "description": "Integration configuration" },
+      { "name": "viewer", "description": "Read-only access" }
+    ]
+  },
+
+  "clients": [
+    {
+      "clientId": "mp-portal",
+      "name": "MedicalPower Portal",
+      "enabled": true,
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:3002/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:3002"
+      ],
+      "defaultClientScopes": ["openid", "profile", "email", "roles"]
+    },
+    {
+      "clientId": "ohif-viewer",
+      "name": "OHIF Viewer",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://localhost:3001/*",
+        "http://localhost:8000/ohif/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3001",
+        "http://localhost:8000"
+      ],
+      "defaultClientScopes": ["openid", "profile", "email"]
+    },
+    {
+      "clientId": "mp-api",
+      "name": "MedicalPower API Services",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": true,
+      "protocol": "openid-connect"
+    }
+  ],
+
+  "users": [
+    {
+      "username": "admin@medicalpower.dev",
+      "email": "admin@medicalpower.dev",
+      "firstName": "System",
+      "lastName": "Admin",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": true
+        }
+      ],
+      "realmRoles": ["system_admin"]
+    },
+    {
+      "username": "lead@medicalpower.dev",
+      "email": "lead@medicalpower.dev",
+      "firstName": "Nguyen",
+      "lastName": "Thi Lan",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "lead123",
+          "temporary": true
+        }
+      ],
+      "realmRoles": ["clinical_lead"]
+    },
+    {
+      "username": "annotator@medicalpower.dev",
+      "email": "annotator@medicalpower.dev",
+      "firstName": "Nguyen",
+      "lastName": "Thi Mai",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "annotator123",
+          "temporary": true
+        }
+      ],
+      "realmRoles": ["annotator"]
+    },
+    {
+      "username": "radiologist@medicalpower.dev",
+      "email": "radiologist@medicalpower.dev",
+      "firstName": "Tran",
+      "lastName": "Van Binh",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "radio123",
+          "temporary": true
+        }
+      ],
+      "realmRoles": ["radiologist", "qa_reviewer"]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "@medicalpower/workflow-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Task lifecycle, assignment rules, SLA tracking, event emission",
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/main",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
+    "test": "jest"
+  }
+}

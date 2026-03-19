@@ -1,0 +1,10 @@
+{
+  "name": "@medicalpower/extension-annotation-save",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OHIF extension to save annotations to MedicalPower annotation-service",
+  "main": "src/index.ts",
+  "peerDependencies": {
+    "@ohif/core": "^3.12.0"
+  }
+}

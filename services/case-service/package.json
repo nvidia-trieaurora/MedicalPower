@@ -1,0 +1,13 @@
+{
+  "name": "@medicalpower/case-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Case lifecycle management, study linkage, priority/SLA management",
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/main",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
+    "test": "jest"
+  }
+}
