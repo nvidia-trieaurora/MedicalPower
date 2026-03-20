@@ -1,0 +1,594 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ORGANIZATION & IDENTITY
+// ============================================================
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  type      String   @default("hospital") // hospital, clinic, research_institute
+  settings  Json     @default("{}")
+  status    String   @default("active") // active, suspended, archived
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  facilities  Facility[]
+  users       User[]
+  roles       Role[]
+  patients    Patient[]
+  cases       Case[]
+  taxonomies  Taxonomy[]
+  auditLogs   AuditLog[]
+
+  @@map("organizations")
+}
+
+model Facility {
+  id               String @id @default(uuid())
+  organizationId   String @map("organization_id")
+  name             String
+  address          String?
+  timezone         String @default("Asia/Ho_Chi_Minh")
+  dicomwebEndpoint String? @map("dicomweb_endpoint")
+  status           String @default("active")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  departments  Department[]
+  visits       Visit[]
+
+  @@map("facilities")
+}
+
+model Department {
+  id            String @id @default(uuid())
+  facilityId    String @map("facility_id")
+  name          String
+  specialtyCode String? @map("specialty_code")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  facility Facility @relation(fields: [facilityId], references: [id])
+  users    User[]
+
+  @@map("departments")
+}
+
+model User {
+  id             String  @id @default(uuid())
+  keycloakId     String? @unique @map("keycloak_id")
+  email          String  @unique
+  fullName       String  @map("full_name")
+  locale         String  @default("vi") // vi, en
+  organizationId String  @map("organization_id")
+  departmentId   String? @map("department_id")
+  status         String  @default("active") // active, inactive, suspended
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization       Organization        @relation(fields: [organizationId], references: [id])
+  department         Department?         @relation(fields: [departmentId], references: [id])
+  roles              UserRole[]
+  assignedTasks      Task[]              @relation("TaskAssignee")
+  createdCases       Case[]              @relation("CaseCreator")
+  annotationSessions AnnotationSession[]
+  reviewDecisions    ReviewDecision[]
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+
+  @@map("users")
+}
+
+model Role {
+  id             String @id @default(uuid())
+  name           String // system_admin, org_admin, clinical_lead, radiologist, annotator, qa_reviewer, data_scientist, viewer
+  description    String?
+  permissions    Json   @default("[]")
+  organizationId String @map("organization_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  users        UserRole[]
+
+  @@unique([name, organizationId])
+  @@map("roles")
+}
+
+model UserRole {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+  roleId String @map("role_id")
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+// ============================================================
+// PATIENT & VISIT
+// ============================================================
+
+model Patient {
+  id             String  @id @default(uuid())
+  mrn            String  // Medical Record Number
+  nationalId     String? @map("national_id") // PHI — CCCD/CMND
+  fullName       String  @map("full_name") // PHI
+  dob            DateTime // PHI — Date of Birth
+  gender         String  // male, female, other
+  phone          String? // PHI
+  address        String? // PHI
+  contactInfo    Json?   @map("contact_info") // PHI — additional contacts
+  organizationId String  @map("organization_id")
+  status         String  @default("active") // active, inactive, merged, deceased
+  mergedIntoId   String? @map("merged_into_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  mergedInto   Patient?     @relation("PatientMerge", fields: [mergedIntoId], references: [id])
+  mergedFrom   Patient[]    @relation("PatientMerge")
+  visits       Visit[]
+  studies      Study[]
+  cases        Case[]
+  reports      DiagnosticReport[]
+
+  @@unique([mrn, organizationId])
+  @@index([fullName])
+  @@index([nationalId])
+  @@index([organizationId])
+  @@map("patients")
+}
+
+model Visit {
+  id         String   @id @default(uuid())
+  patientId  String   @map("patient_id")
+  facilityId String   @map("facility_id")
+  visitDate  DateTime @map("visit_date")
+  type       String   // inpatient, outpatient, emergency
+  status     String   @default("active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  patient  Patient  @relation(fields: [patientId], references: [id])
+  facility Facility @relation(fields: [facilityId], references: [id])
+  studies  Study[]
+
+  @@map("visits")
+}
+
+// ============================================================
+// IMAGING — STUDY / SERIES
+// ============================================================
+
+model Study {
+  id               String   @id @default(uuid())
+  orthancId        String?  @unique @map("orthanc_id")
+  studyInstanceUid String   @unique @map("study_instance_uid")
+  patientId        String   @map("patient_id")
+  visitId          String?  @map("visit_id")
+  modality         String   // CT, MRI, XR, US, PET
+  studyDate        DateTime? @map("study_date")
+  description      String?
+  accessionNumber  String?  @map("accession_number")
+  institutionName  String?  @map("institution_name")
+  referringPhysician String? @map("referring_physician")
+  numSeries        Int      @default(0) @map("num_series")
+  numInstances     Int      @default(0) @map("num_instances")
+  bodyPart         String?  @map("body_part")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  patient        Patient         @relation(fields: [patientId], references: [id])
+  visit          Visit?          @relation(fields: [visitId], references: [id])
+  caseStudyLinks CaseStudyLink[]
+  inferenceJobs  InferenceJob[]
+  reports        DiagnosticReport[]
+
+  @@index([patientId])
+  @@index([modality])
+  @@index([studyDate])
+  @@map("studies")
+}
+
+// ============================================================
+// CASE MANAGEMENT
+// ============================================================
+
+model Case {
+  id               String    @id @default(uuid())
+  title            String
+  description      String?
+  patientId        String    @map("patient_id")
+  organizationId   String    @map("organization_id")
+  priority         String    @default("normal") // critical, high, normal, low
+  status           String    @default("draft") // draft, open, in_progress, review, completed, closed
+  assignedTo       String?   @map("assigned_to")
+  assignedGroup    String?   @map("assigned_group")
+  slaDeadline      DateTime? @map("sla_deadline")
+  metadata         Json?
+  createdById      String    @map("created_by_id")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
+
+  patient        Patient         @relation(fields: [patientId], references: [id])
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  createdBy      User            @relation("CaseCreator", fields: [createdById], references: [id])
+  studyLinks     CaseStudyLink[]
+  tasks          Task[]
+  diagnoses      Diagnosis[]
+  reports        DiagnosticReport[]
+  workflowRuns   WorkflowRun[]
+
+  @@index([patientId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([priority])
+  @@map("cases")
+}
+
+model CaseStudyLink {
+  id      String @id @default(uuid())
+  caseId  String @map("case_id")
+  studyId String @map("study_id")
+  role    String @default("primary") // primary, comparison, prior
+
+  case  Case  @relation(fields: [caseId], references: [id])
+  study Study @relation(fields: [studyId], references: [id])
+
+  @@unique([caseId, studyId])
+  @@map("case_study_links")
+}
+
+// ============================================================
+// WORKFLOW & TASKS
+// ============================================================
+
+model WorkflowTemplate {
+  id              String @id @default(uuid())
+  name            String
+  description     String?
+  version         String @default("1.0.0")
+  stateMachineDef Json   @map("state_machine_def")
+  assignmentRules Json?  @map("assignment_rules")
+  slaConfig       Json?  @map("sla_config")
+  organizationId  String @map("organization_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  workflowRuns WorkflowRun[]
+
+  @@map("workflow_templates")
+}
+
+model WorkflowRun {
+  id          String    @id @default(uuid())
+  templateId  String    @map("template_id")
+  caseId      String    @map("case_id")
+  status      String    @default("running") // running, completed, failed, cancelled
+  currentState String?  @map("current_state")
+  context     Json?
+  startedAt   DateTime  @default(now()) @map("started_at")
+  completedAt DateTime? @map("completed_at")
+
+  template WorkflowTemplate @relation(fields: [templateId], references: [id])
+  case     Case             @relation(fields: [caseId], references: [id])
+  tasks    Task[]
+
+  @@map("workflow_runs")
+}
+
+model Task {
+  id            String    @id @default(uuid())
+  caseId        String    @map("case_id")
+  workflowRunId String?   @map("workflow_run_id")
+  type          String    // annotate, review, adjudicate, diagnose, report
+  status        String    @default("created") // created, assigned, in_progress, submitted, in_review, approved, rejected, completed
+  assignedToId  String?   @map("assigned_to_id")
+  assignedAt    DateTime? @map("assigned_at")
+  startedAt     DateTime? @map("started_at")
+  completedAt   DateTime? @map("completed_at")
+  priority      String    @default("normal") // critical, high, normal, low
+  slaDeadline   DateTime? @map("sla_deadline")
+  lockedBy      String?   @map("locked_by")
+  lockExpiresAt DateTime? @map("lock_expires_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  case               Case              @relation(fields: [caseId], references: [id])
+  workflowRun        WorkflowRun?      @relation(fields: [workflowRunId], references: [id])
+  assignedTo         User?             @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  annotationSessions AnnotationSession[]
+  reviewDecisions    ReviewDecision[]
+
+  @@index([caseId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([type])
+  @@map("tasks")
+}
+
+model ReviewDecision {
+  id              String   @id @default(uuid())
+  taskId          String   @map("task_id")
+  reviewerId      String   @map("reviewer_id")
+  decision        String   // approved, rejected, changes_requested
+  reason          String?
+  discrepancyType String?  @map("discrepancy_type") // boundary_inaccurate, label_incorrect, missing_structure, false_positive, false_negative
+  comments        String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  task     Task @relation(fields: [taskId], references: [id])
+  reviewer User @relation(fields: [reviewerId], references: [id])
+
+  @@map("review_decisions")
+}
+
+// ============================================================
+// ANNOTATION & SEGMENTATION
+// ============================================================
+
+model AnnotationSession {
+  id          String    @id @default(uuid())
+  taskId      String    @map("task_id")
+  userId      String    @map("user_id")
+  studyId     String?   @map("study_id")
+  status      String    @default("active") // active, submitted, closed
+  clientState Json?     @map("client_state") // viewport state, tool state
+  startedAt   DateTime  @default(now()) @map("started_at")
+  endedAt     DateTime? @map("ended_at")
+
+  task      Task                  @relation(fields: [taskId], references: [id])
+  user      User                  @relation(fields: [userId], references: [id])
+  artifacts AnnotationArtifact[]
+  segmentations SegmentationArtifact[]
+  measurements  MeasurementArtifact[]
+
+  @@map("annotation_sessions")
+}
+
+model AnnotationArtifact {
+  id              String  @id @default(uuid())
+  sessionId       String  @map("session_id")
+  type            String  // contour, polygon, landmark, freeform
+  label           String
+  seriesUid       String? @map("series_uid")
+  data            Json?
+  format          String? // json, geojson
+  storagePath     String? @map("storage_path")
+  version         Int     @default(1)
+  parentVersionId String? @map("parent_version_id")
+  provenance      Json?   // { creator_type, model_version, user_id, tool_used }
+  status          String  @default("draft") // draft, submitted, approved, rejected
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  session       AnnotationSession   @relation(fields: [sessionId], references: [id])
+  parentVersion AnnotationArtifact? @relation("AnnotationVersionChain", fields: [parentVersionId], references: [id])
+  childVersions AnnotationArtifact[] @relation("AnnotationVersionChain")
+
+  @@map("annotation_artifacts")
+}
+
+model SegmentationArtifact {
+  id              String  @id @default(uuid())
+  sessionId       String? @map("session_id")
+  inferenceJobId  String? @map("inference_job_id")
+  label           String
+  seriesUid       String? @map("series_uid")
+  format          String  // nifti, dicom_seg
+  storagePath     String  @map("storage_path")
+  maskMetadata    Json?   @map("mask_metadata") // voxel dims, label map
+  version         Int     @default(1)
+  parentVersionId String? @map("parent_version_id")
+  provenance      Json?   // { creator_type, model_id, model_version, user_id }
+  status          String  @default("draft") // ai_generated, human_edited, submitted, approved, rejected
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  session       AnnotationSession?    @relation(fields: [sessionId], references: [id])
+  inferenceJob  InferenceJob?         @relation(fields: [inferenceJobId], references: [id])
+  parentVersion SegmentationArtifact? @relation("SegVersionChain", fields: [parentVersionId], references: [id])
+  childVersions SegmentationArtifact[] @relation("SegVersionChain")
+
+  @@map("segmentation_artifacts")
+}
+
+model MeasurementArtifact {
+  id          String  @id @default(uuid())
+  sessionId   String  @map("session_id")
+  type        String  // length, area, volume, angle, suv
+  value       Float
+  unit        String  // mm, mm2, mm3, degrees, g/ml
+  seriesUid   String? @map("series_uid")
+  instanceUid String? @map("instance_uid")
+  coordinates Json?   // { points, slice }
+  label       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  session AnnotationSession @relation(fields: [sessionId], references: [id])
+
+  @@map("measurement_artifacts")
+}
+
+// ============================================================
+// AI MODEL & INFERENCE
+// ============================================================
+
+model AIModel {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+  modality    String? // CT, MRI, XR
+  bodyPart    String? @map("body_part")
+  taskType    String  @map("task_type") // segmentation, classification, detection
+  framework   String  @default("monai") // monai, pytorch, onnx
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  versions ModelVersion[]
+
+  @@map("ai_models")
+}
+
+model ModelVersion {
+  id               String    @id @default(uuid())
+  modelId          String    @map("model_id")
+  version          String
+  artifactPath     String?   @map("artifact_path")
+  metrics          Json?     // { dice, hausdorff, accuracy }
+  trainingDatasetId String?  @map("training_dataset_id")
+  status           String    @default("training") // training, validating, active, deprecated
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  model         AIModel        @relation(fields: [modelId], references: [id])
+  inferenceJobs InferenceJob[]
+
+  @@unique([modelId, version])
+  @@map("model_versions")
+}
+
+model InferenceJob {
+  id             String    @id @default(uuid())
+  modelVersionId String    @map("model_version_id")
+  studyId        String    @map("study_id")
+  seriesUid      String?   @map("series_uid")
+  requestedBy    String?   @map("requested_by")
+  status         String    @default("queued") // queued, running, completed, failed
+  inputParams    Json?     @map("input_params")
+  resultPath     String?   @map("result_path")
+  executionTimeMs Int?     @map("execution_time_ms")
+  gpuDevice      String?   @map("gpu_device")
+  errorMessage   String?   @map("error_message")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  completedAt    DateTime? @map("completed_at")
+
+  modelVersion    ModelVersion          @relation(fields: [modelVersionId], references: [id])
+  study           Study                 @relation(fields: [studyId], references: [id])
+  segmentations   SegmentationArtifact[]
+
+  @@index([status])
+  @@map("inference_jobs")
+}
+
+// ============================================================
+// DIAGNOSIS & REPORTING
+// ============================================================
+
+model Taxonomy {
+  id             String  @id @default(uuid())
+  type           String  // disease, anatomy, finding
+  code           String
+  nameVi         String  @map("name_vi")
+  nameEn         String  @map("name_en")
+  parentId       String? @map("parent_id")
+  icdMapping     String? @map("icd_mapping")
+  organizationId String  @map("organization_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  parent       Taxonomy?    @relation("TaxonomyTree", fields: [parentId], references: [id])
+  children     Taxonomy[]   @relation("TaxonomyTree")
+  diagnoses    Diagnosis[]
+
+  @@unique([code, organizationId])
+  @@map("taxonomies")
+}
+
+model Diagnosis {
+  id           String   @id @default(uuid())
+  caseId       String   @map("case_id")
+  taxonomyId   String?  @map("taxonomy_id")
+  icdCode      String?  @map("icd_code")
+  icdVersion   String?  @map("icd_version") // 10, 11
+  description  String?
+  severity     String?  // mild, moderate, severe
+  confidence   Float?
+  diagnosedBy  String?  @map("diagnosed_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  case     Case      @relation(fields: [caseId], references: [id])
+  taxonomy Taxonomy? @relation(fields: [taxonomyId], references: [id])
+
+  @@map("diagnoses")
+}
+
+model DiagnosticReport {
+  id           String    @id @default(uuid())
+  caseId       String    @map("case_id")
+  patientId    String    @map("patient_id")
+  studyId      String?   @map("study_id")
+  status       String    @default("draft") // draft, preliminary, final, amended
+  content      Json?     // structured report sections
+  fhirResource Json?     @map("fhir_resource")
+  signedBy     String?   @map("signed_by")
+  signedAt     DateTime? @map("signed_at")
+  pdfPath      String?   @map("pdf_path")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  case    Case    @relation(fields: [caseId], references: [id])
+  patient Patient @relation(fields: [patientId], references: [id])
+  study   Study?  @relation(fields: [studyId], references: [id])
+
+  @@map("diagnostic_reports")
+}
+
+// ============================================================
+// AUDIT & NOTIFICATIONS
+// ============================================================
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  timestamp      DateTime @default(now())
+  actorId        String?  @map("actor_id")
+  actorType      String   @default("user") @map("actor_type") // user, system, integration
+  action         String   // e.g., patient.created, case.status_changed
+  resourceType   String   @map("resource_type")
+  resourceId     String   @map("resource_id")
+  oldValue       Json?    @map("old_value")
+  newValue       Json?    @map("new_value")
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+  organizationId String   @map("organization_id")
+
+  actor        User?        @relation(fields: [actorId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([timestamp])
+  @@index([actorId])
+  @@index([resourceType, resourceId])
+  @@index([organizationId])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  type      String    // task_assigned, review_requested, sla_warning, system
+  title     String
+  body      String
+  channel   String    @default("in_app") // in_app, email, websocket
+  metadata  Json?
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}

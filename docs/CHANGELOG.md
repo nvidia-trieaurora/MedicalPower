@@ -4,6 +4,20 @@ All notable architectural and feature changes are documented here.
 
 ## [Unreleased]
 
+### 2026-03-21 — Database Schema & Patient Service (Step 1)
+- Created shared `packages/database/` with Prisma schema (25+ tables)
+- Tables: organizations, facilities, departments, users, roles, patients, visits,
+  studies, cases, tasks, workflow_templates, workflow_runs, annotation_sessions,
+  annotation_artifacts, segmentation_artifacts, measurement_artifacts,
+  ai_models, model_versions, inference_jobs, taxonomies, diagnoses,
+  diagnostic_reports, review_decisions, audit_logs, notifications
+- Ran initial migration `init_schema` against PostgreSQL
+- Created seed script with: 1 org (BV Thống Nhất), 5 patients, 3 studies,
+  3 cases, 4 tasks, 8 roles, 4 users, 4 taxonomy entries, 2 AI models
+- Built `patient-service` (NestJS): full CRUD API at `/api/v1/patients`
+  with Prisma, search, pagination, soft delete, Swagger docs
+- Verified: API returns real data from PostgreSQL
+
 ### 2026-03-20 — Project Governance & Testing
 - Added `CLAUDE.md` with project rules, architecture decisions, coding conventions
 - Added `.cursor/rules/` with 3 rule files (general, NestJS, portal-web)
