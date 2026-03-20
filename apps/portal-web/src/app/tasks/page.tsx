@@ -54,7 +54,8 @@ const typeLabel: Record<string, string> = {
 };
 
 function TaskCard({ task }: { task: (typeof mockTasks)[0] }) {
-  const viewerUrl = `/ohif/viewer?StudyInstanceUIDs=${task.studyUid}&taskId=${task.id}&caseId=${task.caseId}&patientName=${encodeURIComponent(task.patientName)}&taskType=${task.type}`;
+  const ohifBase = process.env.NEXT_PUBLIC_OHIF_URL || 'http://localhost:8042';
+  const viewerUrl = `${ohifBase}/ohif/viewer?StudyInstanceUIDs=${task.studyUid}&taskId=${task.id}&caseId=${task.caseId}&patientName=${encodeURIComponent(task.patientName)}&taskType=${task.type}`;
 
   return (
     <div className="flex items-center justify-between rounded-lg border bg-card p-4 transition-shadow hover:shadow-sm">

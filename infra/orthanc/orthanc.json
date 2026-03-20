@@ -1,7 +1,11 @@
 {
-  "Name": "MedicalPower Orthanc",
+  "Name": "MedicalPower DICOM Server",
   "RemoteAccessAllowed": true,
-  "AuthenticationEnabled": false,
+  "AuthenticationEnabled": true,
+  "RegisteredUsers": {
+    "admin": "mp_admin_2026",
+    "ohif": "ohif_readonly"
+  },
 
   "DicomPort": 4242,
   "HttpPort": 8042,
@@ -11,21 +15,31 @@
     "Root": "/dicom-web/",
     "EnableWado": true,
     "WadoRoot": "/wado",
-    "Host": "orthanc",
+    "Host": "0.0.0.0",
     "Ssl": false,
     "StowMaxInstances": 10,
     "StowMaxSize": 10
   },
 
-  "PostgreSQL": {
-    "EnableIndex": true,
-    "EnableStorage": false,
-    "Host": "postgres",
-    "Port": 5432,
-    "Database": "orthanc",
-    "Username": "mp_admin",
-    "Password": "mp_secret_dev",
-    "Lock": false
+  "OrthancExplorer2": {
+    "Enable": true,
+    "IsDefaultOrthancUI": true,
+    "UiOptions": {
+      "EnableUpload": true,
+      "EnableDeleteResources": true,
+      "EnableApiViewMenu": false,
+      "EnableSettings": false,
+      "EnableLinkToSourceCode": false,
+      "MaxStudiesDisplayed": 100,
+      "ShowOrthancName": true,
+      "StudyListSearchMode": "search-as-you-type",
+      "StudyListContentIfNoSearch": "most-recents",
+      "EnableOpenInOhifViewer3": true,
+      "OhifViewer3PublicRoot": "http://localhost:3001/",
+      "EnableShares": false
+    },
+    "Tokens": {},
+    "Theme": "dark"
   },
 
   "StableAge": 5,
@@ -35,14 +49,10 @@
   "LimitFindResults": 100,
   "LimitFindInstances": 100,
 
-  "DicomModalities": {},
-  "OrthancPeers": {},
-
+  "HttpsCACertificates": "",
   "ConcurrentJobs": 2,
   "HttpThreadsCount": 50,
 
-  "Plugins": [
-    "/usr/share/orthanc/plugins/libOrthancDicomWeb.so",
-    "/usr/share/orthanc/plugins/libOrthancPostgreSQLIndex.so"
-  ]
+  "DicomModalities": {},
+  "OrthancPeers": {}
 }

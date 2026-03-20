@@ -1,0 +1,182 @@
+/* MedicalPower Orthanc Admin Branding */
+
+:root {
+  --oe2-brand-primary: #6366f1;
+  --oe2-brand-primary-hover: #4f46e5;
+  --oe2-brand-accent: #8b5cf6;
+  --oe2-brand-bg-dark: #0f172a;
+  --oe2-brand-bg-sidebar: #1e293b;
+  --oe2-brand-text: #e2e8f0;
+  --oe2-brand-text-muted: #94a3b8;
+  --oe2-brand-border: #334155;
+  --oe2-brand-success: #22c55e;
+  --oe2-brand-warning: #f59e0b;
+  --oe2-brand-danger: #ef4444;
+}
+
+/* Dark theme override for Orthanc Explorer 2 */
+body.dark-theme,
+body[data-bs-theme="dark"] {
+  --bs-body-bg: var(--oe2-brand-bg-dark) !important;
+  --bs-body-color: var(--oe2-brand-text) !important;
+  --bs-primary: var(--oe2-brand-primary) !important;
+  --bs-primary-rgb: 99, 102, 241 !important;
+}
+
+/* Navbar branding */
+.navbar,
+nav.navbar {
+  background-color: var(--oe2-brand-bg-sidebar) !important;
+  border-bottom: 1px solid var(--oe2-brand-border) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+.navbar-brand {
+  font-weight: 700 !important;
+  font-size: 1.1rem !important;
+  letter-spacing: -0.01em !important;
+}
+
+.navbar-brand::before {
+  content: "⚕ ";
+  font-size: 1.2em;
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: var(--oe2-brand-primary) !important;
+  border-color: var(--oe2-brand-primary) !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  transition: all 0.15s ease !important;
+}
+
+.btn-primary:hover {
+  background-color: var(--oe2-brand-primary-hover) !important;
+  border-color: var(--oe2-brand-primary-hover) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3) !important;
+}
+
+.btn-outline-primary {
+  color: var(--oe2-brand-primary) !important;
+  border-color: var(--oe2-brand-primary) !important;
+  border-radius: 8px !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--oe2-brand-primary) !important;
+  color: white !important;
+}
+
+/* Cards */
+.card {
+  border-radius: 12px !important;
+  border: 1px solid var(--oe2-brand-border) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Tables */
+.table {
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.table thead th {
+  background-color: var(--oe2-brand-bg-sidebar) !important;
+  border-bottom: 2px solid var(--oe2-brand-primary) !important;
+  font-weight: 600 !important;
+  font-size: 0.85rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: var(--oe2-brand-text-muted) !important;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(99, 102, 241, 0.08) !important;
+}
+
+/* Study list items */
+.study-item,
+.list-group-item {
+  border-radius: 8px !important;
+  margin-bottom: 4px !important;
+  transition: all 0.15s ease !important;
+}
+
+.study-item:hover,
+.list-group-item:hover {
+  border-color: var(--oe2-brand-primary) !important;
+  box-shadow: 0 0 0 1px var(--oe2-brand-primary) !important;
+}
+
+/* Upload area */
+.upload-area,
+.dropzone {
+  border: 2px dashed var(--oe2-brand-border) !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+.upload-area:hover,
+.dropzone:hover {
+  border-color: var(--oe2-brand-primary) !important;
+  background-color: rgba(99, 102, 241, 0.05) !important;
+}
+
+/* Badges */
+.badge {
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  font-size: 0.75rem !important;
+  padding: 4px 8px !important;
+}
+
+.badge.bg-success { background-color: var(--oe2-brand-success) !important; }
+.badge.bg-warning { background-color: var(--oe2-brand-warning) !important; }
+.badge.bg-danger { background-color: var(--oe2-brand-danger) !important; }
+
+/* Search inputs */
+input.form-control,
+select.form-select {
+  border-radius: 8px !important;
+  border-color: var(--oe2-brand-border) !important;
+  transition: border-color 0.15s ease !important;
+}
+
+input.form-control:focus,
+select.form-select:focus {
+  border-color: var(--oe2-brand-primary) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--oe2-brand-bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--oe2-brand-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--oe2-brand-text-muted);
+}
+
+/* Footer / watermark */
+footer,
+.footer {
+  font-size: 0.75rem !important;
+  color: var(--oe2-brand-text-muted) !important;
+}
+
+footer::after,
+.footer::after {
+  content: " | MedicalPower Platform";
+}

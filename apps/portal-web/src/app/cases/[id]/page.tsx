@@ -127,7 +127,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
                   </p>
                 </div>
                 <a
-                  href={`/ohif/viewer?StudyInstanceUIDs=${s.studyInstanceUid}&caseId=${caseData.id}`}
+                  href={`${process.env.NEXT_PUBLIC_OHIF_URL || 'http://localhost:8042'}/ohif/viewer?StudyInstanceUIDs=${s.studyInstanceUid}&caseId=${caseData.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/80"
@@ -166,7 +166,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
                 </Badge>
                 {task.status === 'in_progress' && (
                   <a
-                    href={`/ohif/viewer?StudyInstanceUIDs=${task.studyUid}&taskId=${task.id}&caseId=${task.caseId}`}
+                    href={`${process.env.NEXT_PUBLIC_OHIF_URL || 'http://localhost:8042'}/ohif/viewer?StudyInstanceUIDs=${task.studyUid}&taskId=${task.id}&caseId=${task.caseId}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-sm font-medium hover:bg-muted"

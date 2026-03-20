@@ -111,7 +111,7 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
                 </p>
               </div>
               <a
-                href={`/ohif/viewer?StudyInstanceUIDs=${s.studyInstanceUid}`}
+                href={`${process.env.NEXT_PUBLIC_OHIF_URL || 'http://localhost:8042'}/ohif/viewer?StudyInstanceUIDs=${s.studyInstanceUid}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-muted"

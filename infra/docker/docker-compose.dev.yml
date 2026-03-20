@@ -80,24 +80,38 @@ services:
   # DICOM BACKEND
   # ============================================================
   orthanc:
-    image: orthancteam/orthanc:24.12.1
+    image: orthancteam/orthanc:latest
     ports:
       - "8042:8042"
       - "4242:4242"
     volumes:
       - orthanc_data:/var/lib/orthanc/db
       - ../orthanc/orthanc.json:/etc/orthanc/orthanc.json
+      - ../orthanc/custom-ui/branding.css:/usr/share/orthanc/explorer2/custom/branding.css:ro
     environment:
-      ORTHANC__POSTGRESQL__HOST: postgres
-      ORTHANC__POSTGRESQL__PORT: 5432
-      ORTHANC__POSTGRESQL__DATABASE: orthanc
-      ORTHANC__POSTGRESQL__USERNAME: mp_admin
-      ORTHANC__POSTGRESQL__PASSWORD: ${POSTGRES_PASSWORD:-mp_secret_dev}
+      ORTHANC__NAME: "MedicalPower DICOM Server"
+      ORTHANC__AUTHENTICATION_ENABLED: "true"
+      ORTHANC__REGISTERED_USERS: '{"admin": "mp_admin_2026", "ohif": "ohif_readonly"}'
+      ORTHANC__DICOM_WEB__ENABLE: "true"
+      ORTHANC__DICOM_WEB__ROOT: "/dicom-web/"
+      ORTHANC__ORTHANC_EXPLORER_2__ENABLE: "true"
+      ORTHANC__ORTHANC_EXPLORER_2__IS_DEFAULT_ORTHANC_U_I: "true"
+      ORTHANC__ORTHANC_EXPLORER_2__THEME: "dark"
+      ORTHANC__ORTHANC_EXPLORER_2__UI_OPTIONS__ENABLE_UPLOAD: "true"
+      ORTHANC__ORTHANC_EXPLORER_2__UI_OPTIONS__ENABLE_DELETE_RESOURCES: "true"
+      ORTHANC__ORTHANC_EXPLORER_2__UI_OPTIONS__ENABLE_API_VIEW_MENU: "false"
+      ORTHANC__ORTHANC_EXPLORER_2__UI_OPTIONS__ENABLE_SETTINGS: "false"
+      ORTHANC__ORTHANC_EXPLORER_2__UI_OPTIONS__ENABLE_LINK_TO_SOURCE_CODE: "false"
+      ORTHANC__ORTHANC_EXPLORER_2__UI_OPTIONS__STUDY_LIST_SEARCH_MODE: "search-as-you-type"
+      ORTHANC__ORTHANC_EXPLORER_2__UI_OPTIONS__STUDY_LIST_CONTENT_IF_NO_SEARCH: "most-recents"
+      ORTHANC__ORTHANC_EXPLORER_2__UI_OPTIONS__ENABLE_OPEN_IN_OHIF_VIEWER_3: "true"
+      ORTHANC__ORTHANC_EXPLORER_2__UI_OPTIONS__OHIF_VIEWER_3_PUBLIC_ROOT: "http://localhost:3001/"
+      ORTHANC__ORTHANC_EXPLORER_2__CUSTOM_CSS_PATH: "/usr/share/orthanc/explorer2/custom/branding.css"
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8042/system"]
+      test: ["CMD", "curl", "-f", "-u", "admin:mp_admin_2026", "http://localhost:8042/system"]
       interval: 15s
       timeout: 10s
       retries: 5

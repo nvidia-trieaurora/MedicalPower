@@ -56,7 +56,7 @@ export interface Task {
 }
 
 export const mockPatients: Patient[] = [
-  { id: 'pat_001', mrn: 'VN-HCM-2026-001234', fullName: 'Nguyễn Văn An', dob: '1985-07-15', gender: 'male', nationalId: '079123456789', phone: '+84 909 123 456', address: '123 Nguyễn Huệ, Q.1, TP.HCM', status: 'active', createdAt: '2026-03-01T08:00:00Z' },
+  { id: 'pat_001', mrn: '23057406', fullName: 'Bùi Trọng Tình', dob: '1984-02-29', gender: 'male', nationalId: '079123456789', phone: '+84 909 123 456', address: 'BV Thống Nhất, TP.HCM', status: 'active', createdAt: '2023-03-14T07:00:00Z' },
   { id: 'pat_002', mrn: 'VN-HCM-2026-001235', fullName: 'Trần Thị Bích', dob: '1992-03-22', gender: 'female', nationalId: '079234567890', phone: '+84 908 234 567', address: '45 Lê Lợi, Q.3, TP.HCM', status: 'active', createdAt: '2026-03-02T09:30:00Z' },
   { id: 'pat_003', mrn: 'VN-HN-2026-000891', fullName: 'Phạm Minh Cường', dob: '1978-11-08', gender: 'male', nationalId: '001345678901', phone: '+84 912 345 678', address: '78 Trần Hưng Đạo, Hoàn Kiếm, Hà Nội', status: 'active', createdAt: '2026-03-05T14:00:00Z' },
   { id: 'pat_004', mrn: 'VN-DN-2026-000456', fullName: 'Lê Thị Dung', dob: '2001-06-30', gender: 'female', nationalId: '048456789012', phone: '+84 905 456 789', address: '12 Bạch Đằng, Hải Châu, Đà Nẵng', status: 'active', createdAt: '2026-03-10T10:15:00Z' },
@@ -64,7 +64,7 @@ export const mockPatients: Patient[] = [
 ];
 
 export const mockStudies: Study[] = [
-  { id: 'std_001', studyInstanceUid: '1.2.840.113654.2.70.1.1001', patientId: 'pat_001', patientName: 'Nguyễn Văn An', modality: 'CT', description: 'CT Chest with Contrast', studyDate: '2026-03-15', numSeries: 4, numInstances: 312 },
+  { id: 'std_001', studyInstanceUid: '1.2.840.113704.1.111.13428.1678778829.1', patientId: 'pat_001', patientName: 'Bùi Trọng Tình', modality: 'CT', description: 'CT cột sống cổ có tiêm thuốc cản quang - Abscess', studyDate: '2023-03-14', numSeries: 1, numInstances: 598 },
   { id: 'std_002', studyInstanceUid: '1.2.840.113654.2.70.1.1002', patientId: 'pat_002', patientName: 'Trần Thị Bích', modality: 'MRI', description: 'MRI Brain without Contrast', studyDate: '2026-03-14', numSeries: 6, numInstances: 180 },
   { id: 'std_003', studyInstanceUid: '1.2.840.113654.2.70.1.1003', patientId: 'pat_003', patientName: 'Phạm Minh Cường', modality: 'CT', description: 'CT Abdomen Pelvis', studyDate: '2026-03-16', numSeries: 3, numInstances: 450 },
   { id: 'std_004', studyInstanceUid: '1.2.840.113654.2.70.1.1004', patientId: 'pat_004', patientName: 'Lê Thị Dung', modality: 'MRI', description: 'MRI Spine Lumbar', studyDate: '2026-03-17', numSeries: 5, numInstances: 200 },
@@ -72,7 +72,7 @@ export const mockStudies: Study[] = [
 ];
 
 export const mockCases: Case[] = [
-  { id: 'case_001', title: 'CT Chest - Lung nodule evaluation', description: 'Đánh giá nốt phổi phát hiện trên CT ngực', patientId: 'pat_001', patientName: 'Nguyễn Văn An', priority: 'high', status: 'in_progress', assignedTo: 'Nguyễn Thị Mai', studyIds: ['std_001'], taxonomyTags: ['Lung Nodule', 'CT Chest'], slaDeadline: '2026-03-20T18:00:00Z', createdBy: 'Dr. Trần Văn Bình', createdAt: '2026-03-15T10:00:00Z', updatedAt: '2026-03-18T14:30:00Z' },
+  { id: 'case_001', title: 'CT C-Spine - Abscess evaluation', description: 'Đánh giá áp xe cột sống cổ trên CT có tiêm thuốc cản quang - BV Thống Nhất', patientId: 'pat_001', patientName: 'Bùi Trọng Tình', priority: 'high', status: 'in_progress', assignedTo: 'Nguyễn Thị Mai', studyIds: ['std_001'], taxonomyTags: ['Abscess', 'C-Spine', 'CT Contrast'], slaDeadline: '2026-03-20T18:00:00Z', createdBy: 'Dr. Đỗ Bảo Ngọc', createdAt: '2023-03-14T14:27:00Z', updatedAt: '2026-03-18T14:30:00Z' },
   { id: 'case_002', title: 'MRI Brain - Tumor assessment', description: 'Đánh giá khối u não trên MRI', patientId: 'pat_002', patientName: 'Trần Thị Bích', priority: 'critical', status: 'review', assignedTo: 'Dr. Trần Văn Bình', studyIds: ['std_002'], taxonomyTags: ['Brain Tumor', 'MRI'], slaDeadline: '2026-03-19T12:00:00Z', createdBy: 'Nguyễn Thị Lan', createdAt: '2026-03-14T09:00:00Z', updatedAt: '2026-03-19T08:00:00Z' },
   { id: 'case_003', title: 'CT Abdomen - Liver segmentation', description: 'Phân đoạn gan trên CT bụng', patientId: 'pat_003', patientName: 'Phạm Minh Cường', priority: 'normal', status: 'open', assignedTo: null, studyIds: ['std_003'], taxonomyTags: ['Liver', 'Segmentation'], slaDeadline: '2026-03-22T18:00:00Z', createdBy: 'Nguyễn Thị Lan', createdAt: '2026-03-16T14:00:00Z', updatedAt: '2026-03-16T14:00:00Z' },
   { id: 'case_004', title: 'MRI Spine - Disc herniation', description: 'Đánh giá thoát vị đĩa đệm cột sống thắt lưng', patientId: 'pat_004', patientName: 'Lê Thị Dung', priority: 'normal', status: 'draft', assignedTo: null, studyIds: ['std_004'], taxonomyTags: ['Spine', 'Disc'], slaDeadline: null, createdBy: 'Nguyễn Thị Lan', createdAt: '2026-03-17T11:00:00Z', updatedAt: '2026-03-17T11:00:00Z' },
@@ -80,7 +80,7 @@ export const mockCases: Case[] = [
 ];
 
 export const mockTasks: Task[] = [
-  { id: 'task_001', caseId: 'case_001', caseTitle: 'CT Chest - Lung nodule evaluation', patientName: 'Nguyễn Văn An', type: 'annotate', status: 'in_progress', assignedTo: 'Nguyễn Thị Mai', priority: 'high', studyUid: '1.2.840.113654.2.70.1.1001', modality: 'CT', slaDeadline: '2026-03-20T18:00:00Z', createdAt: '2026-03-15T10:30:00Z' },
+  { id: 'task_001', caseId: 'case_001', caseTitle: 'CT C-Spine - Abscess evaluation', patientName: 'Bùi Trọng Tình', type: 'annotate', status: 'in_progress', assignedTo: 'Nguyễn Thị Mai', priority: 'high', studyUid: '1.2.840.113704.1.111.13428.1678778829.1', modality: 'CT', slaDeadline: '2026-03-20T18:00:00Z', createdAt: '2023-03-14T14:30:00Z' },
   { id: 'task_002', caseId: 'case_002', caseTitle: 'MRI Brain - Tumor assessment', patientName: 'Trần Thị Bích', type: 'review', status: 'in_review', assignedTo: 'Dr. Trần Văn Bình', priority: 'critical', studyUid: '1.2.840.113654.2.70.1.1002', modality: 'MRI', slaDeadline: '2026-03-19T12:00:00Z', createdAt: '2026-03-18T09:00:00Z' },
   { id: 'task_003', caseId: 'case_003', caseTitle: 'CT Abdomen - Liver segmentation', patientName: 'Phạm Minh Cường', type: 'annotate', status: 'assigned', assignedTo: 'Nguyễn Thị Mai', priority: 'normal', studyUid: '1.2.840.113654.2.70.1.1003', modality: 'CT', slaDeadline: '2026-03-22T18:00:00Z', createdAt: '2026-03-16T14:30:00Z' },
   { id: 'task_004', caseId: 'case_005', caseTitle: 'CT Chest - Screening follow-up', patientName: 'Hoàng Đức Em', type: 'annotate', status: 'completed', assignedTo: 'Nguyễn Thị Mai', priority: 'low', studyUid: '1.2.840.113654.2.70.1.1005', modality: 'CT', slaDeadline: '2026-03-21T18:00:00Z', createdAt: '2026-03-18T08:30:00Z' },
