@@ -1,0 +1,45 @@
+---
+description: Rules for Prisma database schema design
+globs: ["packages/database/**/*.prisma", "**/prisma/**/*.prisma"]
+---
+
+# Database Schema Rules
+
+## Schema Organization
+
+- Schema is split into domain-scoped files in `packages/database/prisma/schema/`
+- File naming: `NN_domain.prisma` (numbered prefix for load order)
+- `00_datasource.prisma` must always contain generator + datasource
+- Each file has a header comment with domain name and owning service
+- When adding a new domain, create a new numbered file — NEVER append to existing domain files
+
+## Table Design for Scale
+
+- All tables MUST have `id` (UUID), `createdAt`, `updatedAt`
+- Clinical data MUST have `deletedAt` for soft delete — never hard delete
+- Multi-tenant tables MUST have `organizationId` with `@@index`
+- Add `@@index` for EVERY field used in WHERE, ORDER BY, or JOIN
+- Use `@@unique` constraints for business uniqueness (e.g., `[mrn, organizationId]`)
+- JSONB fields (`Json` type) for flexible metadata — but don't over-use for queryable data
+- Mark PHI/PII fields with `// PHI` comment
+
+## Naming
+
+- Table names: `@@map("snake_case_plural")` (e.g., `@@map("patients")`)
+- Column names: `@map("snake_case")` (e.g., `@map("created_at")`)
+- Model names: PascalCase (e.g., `Patient`, `CaseStudyLink`)
+- Foreign keys: `<entity>Id` in Prisma, `<entity>_id` in database
+
+## Relationships
+
+- Always define both sides of a relation
+- Use explicit relation names for ambiguous relations (e.g., `@relation("CaseCreator")`)
+- Self-referential: use named relation (e.g., `@relation("PatientMerge")`)
+- Many-to-many: use explicit join table (e.g., `UserRole`), not Prisma implicit
+
+## Migration Safety
+
+- Never rename columns in production — add new column, migrate data, drop old
+- Never drop tables with data — add `deletedAt` flag instead
+- Test migrations on a copy of production data before deploying
+- Migration files are immutable once pushed — create new migration for changes

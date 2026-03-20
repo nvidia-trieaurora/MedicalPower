@@ -10,6 +10,39 @@ MedicalPower is a production-grade medical imaging annotation and case managemen
 
 ## Critical Rules
 
+### 0. Scalability & Maintainability — THE TOP PRIORITY
+
+Every line of code must be written with scale and long-term maintenance in mind:
+
+**Scalability:**
+- Design for 10x current load from day one
+- ALL list endpoints MUST have pagination (never return unbounded arrays)
+- Database queries MUST use indexes — no unindexed WHERE/ORDER BY
+- Services MUST be stateless — no in-memory state that can't survive restart
+- Use async message queues for cross-service communication
+- Consider: "will this work with 5 replicas behind a load balancer?"
+
+**Maintainability:**
+- Functions > 50 lines → break into smaller functions
+- Max 3 levels of nesting → use early returns
+- One module = one responsibility (SRP)
+- Composition over inheritance
+- Keep cyclomatic complexity low (< 5 branches per function)
+- New developer should understand code in < 30 minutes
+
+**Architecture Patterns:**
+- SOLID principles (see `.cursor/rules/medicalpower.mdc`)
+- Domain-Driven Design boundaries (see PLANNING.md Section 10)
+- Layered architecture: Controller → Service → Repository
+- Event-driven for cross-service: RabbitMQ domain events
+
+**Cursor Rules:** See `.cursor/rules/` for file-specific rules:
+- `medicalpower.mdc` — global rules (scalability, SOLID, security)
+- `nestjs-service.mdc` — NestJS layered architecture, pagination, DI
+- `portal-web.mdc` — React component patterns, performance, a11y
+- `database-schema.mdc` — Prisma multi-file schema, indexes, PHI
+- `python-service.mdc` — FastAPI async patterns, Pydantic models
+
 ### 1. Documentation-First Development
 
 Every feature that introduces architectural changes, new services, new database schemas, or infrastructure modifications MUST:

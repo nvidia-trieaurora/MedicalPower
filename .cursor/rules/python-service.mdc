@@ -1,0 +1,57 @@
+---
+description: Rules for Python FastAPI services (segmentation-service)
+globs: ["services/segmentation-service/**/*.py"]
+---
+
+# Python Service Rules
+
+## Architecture
+
+```
+services/segmentation-service/
+├── app/
+│   ├── main.py              ← FastAPI app entry, middleware, router registration
+│   ├── config.py            ← Pydantic Settings (env-based config)
+│   ├── api/                 ← Route handlers (thin — delegate to services)
+│   ├── services/            ← Business logic and external integrations
+│   ├── models/
+│   │   └── schemas.py       ← Pydantic request/response models
+│   └── core/                ← Shared utilities (auth, errors, logging)
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── conftest.py          ← Shared fixtures
+├── requirements.txt
+└── Dockerfile
+```
+
+## Scalability Patterns
+
+- Use async/await for ALL I/O operations (httpx, database, file)
+- Use background tasks or message queues for long-running inference jobs
+- Never block the event loop with synchronous operations
+- Use connection pooling for external services (httpx.AsyncClient)
+- Implement health check endpoints: `/health` and `/health/ready`
+
+## Code Quality
+
+- Type hints on ALL function signatures
+- Pydantic models for ALL request/response schemas — no raw dicts in API
+- Use `pydantic-settings` for configuration (BaseSettings with env vars)
+- Docstrings on public functions and classes
+- Use `ruff` or `black` for formatting, `ruff` for linting
+
+## Error Handling
+
+- Use FastAPI HTTPException with detail dict: `{"code": "...", "message": "..."}`
+- Catch and wrap external service errors (MONAI Label, MinIO)
+- Return 503 Service Unavailable when MONAI Label is down (not 500)
+- Log errors with context for debugging
+
+## Testing
+
+- Use `pytest` with `pytest-asyncio` for async tests
+- Mock external services with `unittest.mock.patch`
+- Test files: `test_*.py`
+- Fixtures in `conftest.py`
+- Minimum 80% coverage on business logic

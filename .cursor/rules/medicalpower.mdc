@@ -6,6 +6,42 @@ alwaysApply: true
 
 # MedicalPower Development Rules
 
+## Core Principles — ALWAYS Apply
+
+### 1. Scalability First
+Every piece of code must be written with future scale in mind:
+- Design for 10x current load from day one
+- Use pagination on ALL list endpoints (never return unbounded arrays)
+- Database queries MUST use indexes — check `@@index` in Prisma schema before adding WHERE clauses
+- Avoid N+1 queries — use Prisma `include` or separate batch queries
+- Services must be stateless — no in-memory state that can't survive a restart
+- Use message queues (RabbitMQ) for async operations, not synchronous HTTP chains
+- Consider horizontal scaling: will this code work with 5 replicas?
+
+### 2. Maintainability
+Code should be readable by a new developer joining 6 months from now:
+- Functions > 50 lines should be broken into smaller functions
+- Maximum 3 levels of nesting — extract early returns or helper functions
+- One module = one responsibility (Single Responsibility Principle)
+- Prefer composition over inheritance
+- Extract business rules into named functions, not inline conditions
+- Use domain-specific error classes, not generic Error throws
+- Keep cyclomatic complexity low — if a function has > 5 branches, refactor it
+
+### 3. Domain-Driven Design
+- Each service owns its domain and data — no direct database access across service boundaries
+- Use events (RabbitMQ) for cross-service communication
+- Shared types in `packages/types/` — but services should NOT depend on each other's internal types
+- Aggregate boundaries: Patient, Case, WorkflowRun, AnnotationSession, AIModel (see CLAUDE.md)
+- Entity IDs are UUIDs, always
+
+### 4. SOLID Principles
+- **S**ingle Responsibility: one class/module = one reason to change
+- **O**pen/Closed: extend via new modules, not modifying existing ones
+- **L**iskov Substitution: interfaces/abstract classes for swappable implementations
+- **I**nterface Segregation: small, focused interfaces (DTOs per use case, not god objects)
+- **D**ependency Inversion: depend on abstractions (inject PrismaService, not raw SQL)
+
 ## Documentation Requirements
 
 When making changes that affect architecture, database schema, infrastructure, or introduce new services:
@@ -22,8 +58,26 @@ When making changes that affect architecture, database schema, infrastructure, o
 - Every service must have `tests/` directory with unit tests
 - Test files: `*.spec.ts` (TypeScript), `test_*.py` (Python)
 - Minimum 80% test coverage for business logic
-- Use Prisma for database schema and migrations
+- Prisma schema lives in `packages/database/prisma/schema/` (multi-file, domain-scoped)
 - Shared types go in `packages/types/`, never duplicate across services
+- Use `readonly` on DTOs and immutable data structures where possible
+
+## Performance Patterns
+
+- Always add database indexes for fields used in WHERE, ORDER BY, JOIN
+- Use cursor-based pagination for large datasets (not offset-based)
+- Cache frequently-read, rarely-changed data (taxonomy, roles, org settings)
+- Lazy-load heavy relations — don't include everything by default
+- Use database connection pooling (Prisma handles this)
+- Consider adding `select` to Prisma queries to fetch only needed fields
+
+## Error Handling
+
+- Use NestJS exception filters for consistent error responses
+- Always include `error.code` (machine-readable) and `error.message_key` (i18n key)
+- Log errors with context (userId, requestId, resourceId) for debugging
+- Never expose stack traces or internal details in production API responses
+- Use circuit breaker pattern for external service calls (MONAI Label, Orthanc)
 
 ## Naming Conventions
 
@@ -32,6 +86,7 @@ When making changes that affect architecture, database schema, infrastructure, o
 - DB tables: `snake_case`, plural (e.g., `patients`, `case_study_links`)
 - Components: PascalCase (e.g., `PatientList.tsx`)
 - Services: kebab-case directories (e.g., `patient-service/`)
+- Events: `domain.entity.action` (e.g., `patient.patient.created`)
 
 ## Git Commits
 
@@ -44,3 +99,6 @@ Types: feat, fix, refactor, docs, test, infra, chore
 - Use `.env.local` for local secrets (gitignored)
 - PHI/PII fields must be noted in schema comments
 - All API endpoints require authentication unless explicitly public
+- Validate ALL input with class-validator decorators (NestJS) or Zod (frontend)
+- Sanitize user input before database queries
+- Use parameterized queries (Prisma does this by default)

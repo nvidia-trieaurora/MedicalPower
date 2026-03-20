@@ -5,9 +5,24 @@ globs: ["services/*-service/**/*.ts", "!services/segmentation-service/**"]
 
 # NestJS Service Rules
 
+## Architecture — Scalable Service Pattern
+
+Each NestJS service follows a layered architecture for maintainability:
+
+```
+Controller (HTTP layer)
+    ↓ calls
+Service (Business logic)
+    ↓ calls
+Repository/Prisma (Data access)
+```
+
+- Controllers: only handle HTTP concerns (parse request, validate, return response)
+- Services: contain ALL business logic — testable without HTTP
+- Prisma: data access only — no business logic in queries
+
 ## Structure
 
-Each NestJS service follows this structure:
 ```
 services/<name>-service/
 ├── src/
@@ -15,42 +30,96 @@ services/<name>-service/
 │   ├── app.module.ts
 │   ├── <domain>/
 │   │   ├── <domain>.module.ts
-│   │   ├── <domain>.controller.ts
-│   │   ├── <domain>.service.ts
+│   │   ├── <domain>.controller.ts       ← thin: parse, validate, delegate
+│   │   ├── <domain>.service.ts          ← all business logic here
 │   │   ├── dto/
-│   │   │   ├── create-<domain>.dto.ts
-│   │   │   └── update-<domain>.dto.ts
-│   │   └── entities/
-│   │       └── <domain>.entity.ts
+│   │   │   ├── create-<domain>.dto.ts   ← input validation
+│   │   │   ├── update-<domain>.dto.ts
+│   │   │   └── query-<domain>.dto.ts    ← pagination, filters
+│   │   └── interfaces/                  ← types for this domain
 │   └── common/
-│       ├── guards/
-│       ├── interceptors/
-│       └── filters/
+│       ├── guards/                      ← auth guards
+│       ├── interceptors/                ← logging, transform
+│       ├── filters/                     ← error handling
+│       └── decorators/                  ← custom decorators
 ├── prisma/
-│   └── schema.prisma
+│   └── schema -> symlink to packages/database/prisma/schema
 ├── tests/
-│   ├── unit/
-│   └── integration/
+│   ├── unit/                            ← mock Prisma, test service logic
+│   └── integration/                     ← real DB, test full flow
 ├── package.json
 ├── tsconfig.json
 └── Dockerfile
 ```
 
-## Database
+## Database — Scalable Patterns
 
-- Use Prisma ORM for all database operations
-- Schema defined in `prisma/schema.prisma`
-- Run `npx prisma migrate dev` for schema changes
-- Always use transactions for multi-table operations
+- Prisma schema is shared: `packages/database/prisma/schema/` (multi-file by domain)
+- Each service symlinks to the shared schema folder
+- Always use transactions for multi-table mutations: `prisma.$transaction()`
+- Use `select` to fetch only needed fields for list endpoints
+- Soft delete pattern: set `deletedAt`, never hard delete clinical data
+- Always filter by `organizationId` for tenant isolation
+- Add `@@index` for any field used in WHERE or ORDER BY
 
-## API Response Format
+## API Design — Scalable Patterns
 
-Success: `{ data: T, meta?: { page, limit, total } }`
-Error: `{ error: { code: string, message: string, message_key: string, trace_id: string } }`
+### Response Format
+```typescript
+// Success (single)
+{ data: T }
+
+// Success (list with pagination)
+{ data: T[], meta: { page, limit, total, totalPages } }
+
+// Error
+{ error: { code: string, message: string, message_key: string, trace_id: string } }
+```
+
+### Pagination (required on ALL list endpoints)
+```typescript
+// Query params
+?page=1&limit=20&sort=createdAt&order=desc
+
+// For large datasets, prefer cursor-based:
+?cursor=<lastId>&limit=20
+```
+
+### Filtering
+```typescript
+// Use query DTOs with class-validator
+?status=active&priority=high&search=nguyen
+```
+
+## Dependency Injection
+
+- Use NestJS DI for all dependencies
+- Services inject PrismaService, never instantiate directly
+- Use interfaces for external dependencies (easier to mock in tests)
+- Register providers in the module, not globally (unless truly shared)
 
 ## Testing
 
-- Unit tests in `tests/unit/` for services and business logic
-- Integration tests in `tests/integration/` for controllers and API
-- Use `jest` with `@nestjs/testing`
-- Mock external dependencies (database, message queue)
+- Unit tests in `tests/unit/` — mock PrismaService, test business logic
+- Integration tests in `tests/integration/` — use real test database
+- Use `@nestjs/testing` Test.createTestingModule for proper DI
+- Test edge cases: not found, duplicate, invalid input, unauthorized
+- Test pagination boundaries: page 0, negative limit, very large offset
+- Mock external services (RabbitMQ, MinIO, Orthanc) in unit tests
+
+## Error Handling
+
+```typescript
+// Use specific NestJS exceptions
+throw new NotFoundException({ code: 'PATIENT_NOT_FOUND', message_key: 'patient.error.notFound' });
+throw new ConflictException({ code: 'DUPLICATE_MRN', message_key: 'patient.error.duplicateMrn' });
+throw new ForbiddenException({ code: 'INSUFFICIENT_PERMISSION' });
+```
+
+## Event Emission (for cross-service communication)
+
+When a significant domain event occurs, emit to RabbitMQ:
+```typescript
+// After creating a patient
+this.eventEmitter.emit('patient.created', { patientId, organizationId, timestamp });
+```

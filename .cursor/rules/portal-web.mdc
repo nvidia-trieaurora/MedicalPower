@@ -5,12 +5,36 @@ globs: ["apps/portal-web/**/*.tsx", "apps/portal-web/**/*.ts"]
 
 # Portal Web Rules
 
+## Scalability & Maintainability
+
+### Component Architecture
+- Follow atomic design: atoms (Button, Badge) → molecules (PatientCard) → organisms (PatientList) → pages
+- Extract reusable logic into custom hooks (`src/hooks/`)
+- Keep components under 150 lines — split into smaller sub-components
+- Co-locate component, types, and tests in the same directory when possible
+- Use composition pattern: pass children/render props instead of massive prop drilling
+
+### State Management
+- Server state: React Server Components + fetch (default)
+- Client state: `useState` for local, `useContext` for shared within a page
+- Form state: controlled components with validation
+- Do NOT introduce a global state library (Redux, Zustand) unless justified with ADR
+- Cache server data with React Query when real API is connected
+
+### Performance
+- Use React Server Components by default — add `'use client'` only when needed
+- Lazy-load heavy components with `dynamic()` import
+- Optimize images with `next/image`
+- Minimize client-side JavaScript — prefer server-side data fetching
+- Use `React.memo` only when profiling shows re-render issues (don't premature optimize)
+
 ## i18n
 
 - All user-visible strings must use i18n translations
 - Import `useLocale` hook for client components
 - Translation files in `packages/i18n/locales/{vi,en}/<namespace>.json`
 - Key pattern: `namespace.context.element`
+- Never hardcode Vietnamese or English strings in components
 
 ## Components
 
@@ -18,16 +42,33 @@ globs: ["apps/portal-web/**/*.tsx", "apps/portal-web/**/*.ts"]
 - Shared layout components in `@/components/layout/`
 - Feature components in `@/components/<feature>/`
 - Use Lucide React for icons
+- Note: shadcn/ui v4 (base-nova) does NOT have `asChild` prop — use native HTML elements for links
 
 ## Data Fetching
 
 - Use Server Components for initial data fetch where possible
-- Client components for interactive features (forms, filters, real-time)
-- API calls go through `@/lib/api.ts` (to be created)
-- Never call backend services directly from components
+- Client components for interactive features (forms, filters, real-time updates)
+- API calls go through `@/lib/api.ts` — centralized API client with error handling
+- Never call backend services directly from components — always go through API layer
+- Handle loading, error, and empty states for every data-fetching component
+
+## Error Handling
+
+- Show user-friendly error messages using i18n keys
+- Display toast notifications for async operations (save, delete, submit)
+- Implement error boundaries for critical sections
+- Log client-side errors for debugging
 
 ## Viewer Integration
 
 - OHIF viewer URL configured via `NEXT_PUBLIC_OHIF_URL` env var
 - Deep-link format: `{OHIF_URL}/ohif/viewer?StudyInstanceUIDs=...&taskId=...&caseId=...`
 - Always open viewer in new tab (`target="_blank"`)
+- Use `@/lib/viewer.ts` for constructing viewer URLs
+
+## Accessibility
+
+- All interactive elements must be keyboard navigable
+- Use semantic HTML elements (`<nav>`, `<main>`, `<article>`, `<button>`)
+- Add `aria-label` to icon-only buttons
+- Color contrast must meet WCAG 2.1 AA
