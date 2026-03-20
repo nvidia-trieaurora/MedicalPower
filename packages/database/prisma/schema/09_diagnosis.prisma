@@ -1,0 +1,64 @@
+// ============================================================
+// Domain: Diagnosis, Taxonomy & Reporting
+// Owner: diagnosis-service + report-service
+// ============================================================
+
+model Taxonomy {
+  id             String   @id @default(uuid())
+  type           String   // disease, anatomy, finding
+  code           String
+  nameVi         String   @map("name_vi")
+  nameEn         String   @map("name_en")
+  parentId       String?  @map("parent_id")
+  icdMapping     String?  @map("icd_mapping")
+  organizationId String   @map("organization_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  parent       Taxonomy?    @relation("TaxonomyTree", fields: [parentId], references: [id])
+  children     Taxonomy[]   @relation("TaxonomyTree")
+  diagnoses    Diagnosis[]
+
+  @@unique([code, organizationId])
+  @@map("taxonomies")
+}
+
+model Diagnosis {
+  id          String   @id @default(uuid())
+  caseId      String   @map("case_id")
+  taxonomyId  String?  @map("taxonomy_id")
+  icdCode     String?  @map("icd_code")
+  icdVersion  String?  @map("icd_version") // 10, 11
+  description String?
+  severity    String?  // mild, moderate, severe
+  confidence  Float?
+  diagnosedBy String?  @map("diagnosed_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  case     Case      @relation(fields: [caseId], references: [id])
+  taxonomy Taxonomy? @relation(fields: [taxonomyId], references: [id])
+
+  @@map("diagnoses")
+}
+
+model DiagnosticReport {
+  id           String    @id @default(uuid())
+  caseId       String    @map("case_id")
+  patientId    String    @map("patient_id")
+  studyId      String?   @map("study_id")
+  status       String    @default("draft") // draft, preliminary, final, amended
+  content      Json?
+  fhirResource Json?     @map("fhir_resource")
+  signedBy     String?   @map("signed_by")
+  signedAt     DateTime? @map("signed_at")
+  pdfPath      String?   @map("pdf_path")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  case    Case    @relation(fields: [caseId], references: [id])
+  patient Patient @relation(fields: [patientId], references: [id])
+  study   Study?  @relation(fields: [studyId], references: [id])
+
+  @@map("diagnostic_reports")
+}

@@ -1,0 +1,54 @@
+// ============================================================
+// Domain: Patient & Visit
+// Owner: patient-service
+// PHI fields marked with "PHI" comment
+// ============================================================
+
+model Patient {
+  id             String    @id @default(uuid())
+  mrn            String    // Medical Record Number
+  nationalId     String?   @map("national_id") // PHI — CCCD/CMND
+  fullName       String    @map("full_name") // PHI
+  dob            DateTime  // PHI — Date of Birth
+  gender         String    // male, female, other
+  phone          String?   // PHI
+  address        String?   // PHI
+  contactInfo    Json?     @map("contact_info") // PHI — additional contacts
+  organizationId String    @map("organization_id")
+  status         String    @default("active") // active, inactive, merged, deceased
+  mergedIntoId   String?   @map("merged_into_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  mergedInto   Patient?     @relation("PatientMerge", fields: [mergedIntoId], references: [id])
+  mergedFrom   Patient[]    @relation("PatientMerge")
+  visits       Visit[]
+  studies      Study[]
+  cases        Case[]
+  reports      DiagnosticReport[]
+
+  @@unique([mrn, organizationId])
+  @@index([fullName])
+  @@index([nationalId])
+  @@index([organizationId])
+  @@map("patients")
+}
+
+model Visit {
+  id         String   @id @default(uuid())
+  patientId  String   @map("patient_id")
+  facilityId String   @map("facility_id")
+  visitDate  DateTime @map("visit_date")
+  type       String   // inpatient, outpatient, emergency
+  status     String   @default("active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  patient  Patient  @relation(fields: [patientId], references: [id])
+  facility Facility @relation(fields: [facilityId], references: [id])
+  studies  Study[]
+
+  @@map("visits")
+}

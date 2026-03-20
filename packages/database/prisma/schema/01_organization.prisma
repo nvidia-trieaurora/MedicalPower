@@ -1,0 +1,57 @@
+// ============================================================
+// Domain: Organization & Facility
+// Owner: identity-service
+// ============================================================
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  type      String   @default("hospital") // hospital, clinic, research_institute
+  settings  Json     @default("{}")
+  status    String   @default("active") // active, suspended, archived
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  facilities Facility[]
+  users      User[]
+  roles      Role[]
+  patients   Patient[]
+  cases      Case[]
+  taxonomies Taxonomy[]
+  auditLogs  AuditLog[]
+
+  @@map("organizations")
+}
+
+model Facility {
+  id               String   @id @default(uuid())
+  organizationId   String   @map("organization_id")
+  name             String
+  address          String?
+  timezone         String   @default("Asia/Ho_Chi_Minh")
+  dicomwebEndpoint String?  @map("dicomweb_endpoint")
+  status           String   @default("active")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  departments  Department[]
+  visits       Visit[]
+
+  @@map("facilities")
+}
+
+model Department {
+  id            String   @id @default(uuid())
+  facilityId    String   @map("facility_id")
+  name          String
+  specialtyCode String?  @map("specialty_code")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  facility Facility @relation(fields: [facilityId], references: [id])
+  users    User[]
+
+  @@map("departments")
+}

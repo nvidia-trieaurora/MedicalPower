@@ -1,0 +1,51 @@
+// ============================================================
+// Domain: Case Management
+// Owner: case-service
+// Lifecycle: draft → open → in_progress → review → completed → closed
+// ============================================================
+
+model Case {
+  id             String    @id @default(uuid())
+  title          String
+  description    String?
+  patientId      String    @map("patient_id")
+  organizationId String    @map("organization_id")
+  priority       String    @default("normal") // critical, high, normal, low
+  status         String    @default("draft") // draft, open, in_progress, review, completed, closed
+  assignedTo     String?   @map("assigned_to")
+  assignedGroup  String?   @map("assigned_group")
+  slaDeadline    DateTime? @map("sla_deadline")
+  metadata       Json?
+  createdById    String    @map("created_by_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  patient      Patient         @relation(fields: [patientId], references: [id])
+  organization Organization    @relation(fields: [organizationId], references: [id])
+  createdBy    User            @relation("CaseCreator", fields: [createdById], references: [id])
+  studyLinks   CaseStudyLink[]
+  tasks        Task[]
+  diagnoses    Diagnosis[]
+  reports      DiagnosticReport[]
+  workflowRuns WorkflowRun[]
+
+  @@index([patientId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([priority])
+  @@map("cases")
+}
+
+model CaseStudyLink {
+  id      String @id @default(uuid())
+  caseId  String @map("case_id")
+  studyId String @map("study_id")
+  role    String @default("primary") // primary, comparison, prior
+
+  case  Case  @relation(fields: [caseId], references: [id])
+  study Study @relation(fields: [studyId], references: [id])
+
+  @@unique([caseId, studyId])
+  @@map("case_study_links")
+}

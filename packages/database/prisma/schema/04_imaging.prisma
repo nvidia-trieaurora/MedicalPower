@@ -1,0 +1,35 @@
+// ============================================================
+// Domain: Imaging — DICOM Study metadata cache
+// Owner: study-service
+// Source of truth for DICOM data remains in Orthanc
+// ============================================================
+
+model Study {
+  id                 String    @id @default(uuid())
+  orthancId          String?   @unique @map("orthanc_id")
+  studyInstanceUid   String    @unique @map("study_instance_uid")
+  patientId          String    @map("patient_id")
+  visitId            String?   @map("visit_id")
+  modality           String    // CT, MRI, XR, US, PET
+  studyDate          DateTime? @map("study_date")
+  description        String?
+  accessionNumber    String?   @map("accession_number")
+  institutionName    String?   @map("institution_name")
+  referringPhysician String?   @map("referring_physician")
+  numSeries          Int       @default(0) @map("num_series")
+  numInstances       Int       @default(0) @map("num_instances")
+  bodyPart           String?   @map("body_part")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  patient        Patient          @relation(fields: [patientId], references: [id])
+  visit          Visit?           @relation(fields: [visitId], references: [id])
+  caseStudyLinks CaseStudyLink[]
+  inferenceJobs  InferenceJob[]
+  reports        DiagnosticReport[]
+
+  @@index([patientId])
+  @@index([modality])
+  @@index([studyDate])
+  @@map("studies")
+}

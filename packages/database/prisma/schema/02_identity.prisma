@@ -1,0 +1,56 @@
+// ============================================================
+// Domain: Identity & Access
+// Owner: identity-service
+// ============================================================
+
+model User {
+  id             String   @id @default(uuid())
+  keycloakId     String?  @unique @map("keycloak_id")
+  email          String   @unique
+  fullName       String   @map("full_name")
+  locale         String   @default("vi") // vi, en
+  organizationId String   @map("organization_id")
+  departmentId   String?  @map("department_id")
+  status         String   @default("active") // active, inactive, suspended
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization       Organization        @relation(fields: [organizationId], references: [id])
+  department         Department?         @relation(fields: [departmentId], references: [id])
+  roles              UserRole[]
+  assignedTasks      Task[]              @relation("TaskAssignee")
+  createdCases       Case[]              @relation("CaseCreator")
+  annotationSessions AnnotationSession[]
+  reviewDecisions    ReviewDecision[]
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+
+  @@map("users")
+}
+
+model Role {
+  id             String   @id @default(uuid())
+  name           String
+  description    String?
+  permissions    Json     @default("[]")
+  organizationId String   @map("organization_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  users        UserRole[]
+
+  @@unique([name, organizationId])
+  @@map("roles")
+}
+
+model UserRole {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+  roleId String @map("role_id")
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}

@@ -1,0 +1,85 @@
+// ============================================================
+// Domain: Workflow & Task Management
+// Owner: workflow-service
+// Task lifecycle: created → assigned → in_progress → submitted → in_review → approved/rejected → completed
+// ============================================================
+
+model WorkflowTemplate {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  version         String   @default("1.0.0")
+  stateMachineDef Json     @map("state_machine_def")
+  assignmentRules Json?    @map("assignment_rules")
+  slaConfig       Json?    @map("sla_config")
+  organizationId  String   @map("organization_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  workflowRuns WorkflowRun[]
+
+  @@map("workflow_templates")
+}
+
+model WorkflowRun {
+  id           String    @id @default(uuid())
+  templateId   String    @map("template_id")
+  caseId       String    @map("case_id")
+  status       String    @default("running") // running, completed, failed, cancelled
+  currentState String?   @map("current_state")
+  context      Json?
+  startedAt    DateTime  @default(now()) @map("started_at")
+  completedAt  DateTime? @map("completed_at")
+
+  template WorkflowTemplate @relation(fields: [templateId], references: [id])
+  case     Case             @relation(fields: [caseId], references: [id])
+  tasks    Task[]
+
+  @@map("workflow_runs")
+}
+
+model Task {
+  id            String    @id @default(uuid())
+  caseId        String    @map("case_id")
+  workflowRunId String?   @map("workflow_run_id")
+  type          String    // annotate, review, adjudicate, diagnose, report
+  status        String    @default("created")
+  assignedToId  String?   @map("assigned_to_id")
+  assignedAt    DateTime? @map("assigned_at")
+  startedAt     DateTime? @map("started_at")
+  completedAt   DateTime? @map("completed_at")
+  priority      String    @default("normal") // critical, high, normal, low
+  slaDeadline   DateTime? @map("sla_deadline")
+  lockedBy      String?   @map("locked_by")
+  lockExpiresAt DateTime? @map("lock_expires_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  case               Case              @relation(fields: [caseId], references: [id])
+  workflowRun        WorkflowRun?      @relation(fields: [workflowRunId], references: [id])
+  assignedTo         User?             @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  annotationSessions AnnotationSession[]
+  reviewDecisions    ReviewDecision[]
+
+  @@index([caseId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([type])
+  @@map("tasks")
+}
+
+model ReviewDecision {
+  id              String   @id @default(uuid())
+  taskId          String   @map("task_id")
+  reviewerId      String   @map("reviewer_id")
+  decision        String   // approved, rejected, changes_requested
+  reason          String?
+  discrepancyType String?  @map("discrepancy_type")
+  comments        String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  task     Task @relation(fields: [taskId], references: [id])
+  reviewer User @relation(fields: [reviewerId], references: [id])
+
+  @@map("review_decisions")
+}

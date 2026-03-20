@@ -1,0 +1,60 @@
+// ============================================================
+// Domain: AI Model & Inference
+// Owner: segmentation-service
+// ============================================================
+
+model AIModel {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  modality    String?  // CT, MRI, XR
+  bodyPart    String?  @map("body_part")
+  taskType    String   @map("task_type") // segmentation, classification, detection
+  framework   String   @default("monai") // monai, pytorch, onnx
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  versions ModelVersion[]
+
+  @@map("ai_models")
+}
+
+model ModelVersion {
+  id                String   @id @default(uuid())
+  modelId           String   @map("model_id")
+  version           String
+  artifactPath      String?  @map("artifact_path")
+  metrics           Json?    // { dice, hausdorff, accuracy }
+  trainingDatasetId String?  @map("training_dataset_id")
+  status            String   @default("training") // training, validating, active, deprecated
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  model         AIModel        @relation(fields: [modelId], references: [id])
+  inferenceJobs InferenceJob[]
+
+  @@unique([modelId, version])
+  @@map("model_versions")
+}
+
+model InferenceJob {
+  id              String    @id @default(uuid())
+  modelVersionId  String    @map("model_version_id")
+  studyId         String    @map("study_id")
+  seriesUid       String?   @map("series_uid")
+  requestedBy     String?   @map("requested_by")
+  status          String    @default("queued") // queued, running, completed, failed
+  inputParams     Json?     @map("input_params")
+  resultPath      String?   @map("result_path")
+  executionTimeMs Int?      @map("execution_time_ms")
+  gpuDevice       String?   @map("gpu_device")
+  errorMessage    String?   @map("error_message")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  completedAt     DateTime? @map("completed_at")
+
+  modelVersion  ModelVersion          @relation(fields: [modelVersionId], references: [id])
+  study         Study                 @relation(fields: [studyId], references: [id])
+  segmentations SegmentationArtifact[]
+
+  @@index([status])
+  @@map("inference_jobs")
+}

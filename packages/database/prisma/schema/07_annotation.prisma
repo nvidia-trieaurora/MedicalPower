@@ -1,0 +1,88 @@
+// ============================================================
+// Domain: Annotation & Segmentation
+// Owner: annotation-service
+// Artifacts store provenance: { creator_type, model_version, user_id, tool_used }
+// ============================================================
+
+model AnnotationSession {
+  id          String    @id @default(uuid())
+  taskId      String    @map("task_id")
+  userId      String    @map("user_id")
+  studyId     String?   @map("study_id")
+  status      String    @default("active") // active, submitted, closed
+  clientState Json?     @map("client_state")
+  startedAt   DateTime  @default(now()) @map("started_at")
+  endedAt     DateTime? @map("ended_at")
+
+  task          Task                  @relation(fields: [taskId], references: [id])
+  user          User                  @relation(fields: [userId], references: [id])
+  artifacts     AnnotationArtifact[]
+  segmentations SegmentationArtifact[]
+  measurements  MeasurementArtifact[]
+
+  @@map("annotation_sessions")
+}
+
+model AnnotationArtifact {
+  id              String   @id @default(uuid())
+  sessionId       String   @map("session_id")
+  type            String   // contour, polygon, landmark, freeform
+  label           String
+  seriesUid       String?  @map("series_uid")
+  data            Json?
+  format          String?  // json, geojson
+  storagePath     String?  @map("storage_path")
+  version         Int      @default(1)
+  parentVersionId String?  @map("parent_version_id")
+  provenance      Json?
+  status          String   @default("draft") // draft, submitted, approved, rejected
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  session       AnnotationSession   @relation(fields: [sessionId], references: [id])
+  parentVersion AnnotationArtifact? @relation("AnnotationVersionChain", fields: [parentVersionId], references: [id])
+  childVersions AnnotationArtifact[] @relation("AnnotationVersionChain")
+
+  @@map("annotation_artifacts")
+}
+
+model SegmentationArtifact {
+  id              String   @id @default(uuid())
+  sessionId       String?  @map("session_id")
+  inferenceJobId  String?  @map("inference_job_id")
+  label           String
+  seriesUid       String?  @map("series_uid")
+  format          String   // nifti, dicom_seg
+  storagePath     String   @map("storage_path")
+  maskMetadata    Json?    @map("mask_metadata")
+  version         Int      @default(1)
+  parentVersionId String?  @map("parent_version_id")
+  provenance      Json?
+  status          String   @default("draft")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  session       AnnotationSession?    @relation(fields: [sessionId], references: [id])
+  inferenceJob  InferenceJob?         @relation(fields: [inferenceJobId], references: [id])
+  parentVersion SegmentationArtifact? @relation("SegVersionChain", fields: [parentVersionId], references: [id])
+  childVersions SegmentationArtifact[] @relation("SegVersionChain")
+
+  @@map("segmentation_artifacts")
+}
+
+model MeasurementArtifact {
+  id          String   @id @default(uuid())
+  sessionId   String   @map("session_id")
+  type        String   // length, area, volume, angle, suv
+  value       Float
+  unit        String   // mm, mm2, mm3, degrees, g/ml
+  seriesUid   String?  @map("series_uid")
+  instanceUid String?  @map("instance_uid")
+  coordinates Json?
+  label       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  session AnnotationSession @relation(fields: [sessionId], references: [id])
+
+  @@map("measurement_artifacts")
+}

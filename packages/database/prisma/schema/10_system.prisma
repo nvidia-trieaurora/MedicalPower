@@ -1,0 +1,46 @@
+// ============================================================
+// Domain: System — Audit & Notifications
+// Owner: audit-service + notification-service
+// AuditLog is append-only — no UPDATE or DELETE permitted
+// ============================================================
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  timestamp      DateTime @default(now())
+  actorId        String?  @map("actor_id")
+  actorType      String   @default("user") @map("actor_type") // user, system, integration
+  action         String   // e.g., patient.created, case.status_changed
+  resourceType   String   @map("resource_type")
+  resourceId     String   @map("resource_id")
+  oldValue       Json?    @map("old_value")
+  newValue       Json?    @map("new_value")
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+  organizationId String   @map("organization_id")
+
+  actor        User?        @relation(fields: [actorId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([timestamp])
+  @@index([actorId])
+  @@index([resourceType, resourceId])
+  @@index([organizationId])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  type      String    // task_assigned, review_requested, sla_warning, system
+  title     String
+  body      String
+  channel   String    @default("in_app") // in_app, email, websocket
+  metadata  Json?
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
