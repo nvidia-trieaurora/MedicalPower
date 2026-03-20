@@ -1,0 +1,46 @@
+---
+description: MedicalPower development rules and conventions
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# MedicalPower Development Rules
+
+## Documentation Requirements
+
+When making changes that affect architecture, database schema, infrastructure, or introduce new services:
+
+1. Update `docs/CHANGELOG.md` with a dated entry describing the change
+2. Update `CLAUDE.md` if conventions or architecture decisions change
+3. Add ADR in `docs/adr/NNN-title.md` for technology/architecture decisions
+4. Update `docs/PLANNING.md` if scope or roadmap changes
+
+## Code Quality
+
+- All UI strings must use i18n keys from `packages/i18n/locales/`
+- Never use `any` type without explicit justification comment
+- Every service must have `tests/` directory with unit tests
+- Test files: `*.spec.ts` (TypeScript), `test_*.py` (Python)
+- Minimum 80% test coverage for business logic
+- Use Prisma for database schema and migrations
+- Shared types go in `packages/types/`, never duplicate across services
+
+## Naming Conventions
+
+- i18n keys: `namespace.context.element` (e.g., `patient.field.fullName`)
+- API routes: `/api/v1/<plural-resource>` (e.g., `/api/v1/patients`)
+- DB tables: `snake_case`, plural (e.g., `patients`, `case_study_links`)
+- Components: PascalCase (e.g., `PatientList.tsx`)
+- Services: kebab-case directories (e.g., `patient-service/`)
+
+## Git Commits
+
+Format: `<type>: <description>`
+Types: feat, fix, refactor, docs, test, infra, chore
+
+## Security
+
+- Never commit secrets, passwords, or API keys
+- Use `.env.local` for local secrets (gitignored)
+- PHI/PII fields must be noted in schema comments
+- All API endpoints require authentication unless explicitly public

@@ -1,0 +1,56 @@
+---
+description: Rules for NestJS backend services
+globs: ["services/*-service/**/*.ts", "!services/segmentation-service/**"]
+---
+
+# NestJS Service Rules
+
+## Structure
+
+Each NestJS service follows this structure:
+```
+services/<name>-service/
+├── src/
+│   ├── main.ts
+│   ├── app.module.ts
+│   ├── <domain>/
+│   │   ├── <domain>.module.ts
+│   │   ├── <domain>.controller.ts
+│   │   ├── <domain>.service.ts
+│   │   ├── dto/
+│   │   │   ├── create-<domain>.dto.ts
+│   │   │   └── update-<domain>.dto.ts
+│   │   └── entities/
+│   │       └── <domain>.entity.ts
+│   └── common/
+│       ├── guards/
+│       ├── interceptors/
+│       └── filters/
+├── prisma/
+│   └── schema.prisma
+├── tests/
+│   ├── unit/
+│   └── integration/
+├── package.json
+├── tsconfig.json
+└── Dockerfile
+```
+
+## Database
+
+- Use Prisma ORM for all database operations
+- Schema defined in `prisma/schema.prisma`
+- Run `npx prisma migrate dev` for schema changes
+- Always use transactions for multi-table operations
+
+## API Response Format
+
+Success: `{ data: T, meta?: { page, limit, total } }`
+Error: `{ error: { code: string, message: string, message_key: string, trace_id: string } }`
+
+## Testing
+
+- Unit tests in `tests/unit/` for services and business logic
+- Integration tests in `tests/integration/` for controllers and API
+- Use `jest` with `@nestjs/testing`
+- Mock external dependencies (database, message queue)

@@ -1,0 +1,33 @@
+---
+description: Rules for the Next.js Portal Web application
+globs: ["apps/portal-web/**/*.tsx", "apps/portal-web/**/*.ts"]
+---
+
+# Portal Web Rules
+
+## i18n
+
+- All user-visible strings must use i18n translations
+- Import `useLocale` hook for client components
+- Translation files in `packages/i18n/locales/{vi,en}/<namespace>.json`
+- Key pattern: `namespace.context.element`
+
+## Components
+
+- Use shadcn/ui components from `@/components/ui/`
+- Shared layout components in `@/components/layout/`
+- Feature components in `@/components/<feature>/`
+- Use Lucide React for icons
+
+## Data Fetching
+
+- Use Server Components for initial data fetch where possible
+- Client components for interactive features (forms, filters, real-time)
+- API calls go through `@/lib/api.ts` (to be created)
+- Never call backend services directly from components
+
+## Viewer Integration
+
+- OHIF viewer URL configured via `NEXT_PUBLIC_OHIF_URL` env var
+- Deep-link format: `{OHIF_URL}/ohif/viewer?StudyInstanceUIDs=...&taskId=...&caseId=...`
+- Always open viewer in new tab (`target="_blank"`)

@@ -1,0 +1,10 @@
+{
+  "id": "case_test_001",
+  "title": "CT Chest - Test Case",
+  "description": "Test case for unit testing",
+  "patientId": "pat_test_001",
+  "priority": "normal",
+  "status": "draft",
+  "taxonomyIds": ["lung_nodule"],
+  "workflowTemplateId": "wft_standard_annotation"
+}

@@ -1,0 +1,11 @@
+{
+  "id": "pat_test_001",
+  "mrn": "TEST-2026-000001",
+  "fullName": "Nguyễn Văn Test",
+  "dob": "1990-01-15",
+  "gender": "male",
+  "nationalId": "079000000001",
+  "phone": "+84 900 000 001",
+  "address": "123 Test Street, Q.1, TP.HCM",
+  "status": "active"
+}
