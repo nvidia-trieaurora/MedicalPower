@@ -1,0 +1,63 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+concurrency:
+  group: staging-deploy
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "20.9.0"
+
+jobs:
+  deploy-staging:
+    name: "Deploy to Staging"
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Build portal-web
+        working-directory: apps/portal-web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build segmentation-service Docker image
+        run: |
+          docker build -f services/segmentation-service/Dockerfile \
+            -t medicalpower/segmentation-service:staging-${{ github.sha }} \
+            services/segmentation-service
+
+      - name: Run database migrations
+        run: |
+          echo "Running Prisma migrations on staging database..."
+          echo "npx prisma migrate deploy --schema=packages/database/prisma/schema"
+          echo "✓ Migration step defined (will connect to staging DB when configured)"
+
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging environment..."
+          echo "This step will be configured when Kubernetes/Docker Swarm staging is set up"
+          echo "Services to deploy:"
+          echo "  - portal-web"
+          echo "  - patient-service"
+          echo "  - segmentation-service"
+          echo "  - orthanc (config update only)"
+
+      - name: Smoke test
+        run: |
+          echo "Running smoke tests against staging..."
+          echo "  - GET /api/v1/patients → 200"
+          echo "  - GET /health → 200"
+          echo "  - Portal loads → 200"

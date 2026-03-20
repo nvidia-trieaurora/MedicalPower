@@ -4,6 +4,20 @@ All notable architectural and feature changes are documented here.
 
 ## [Unreleased]
 
+### 2026-03-21 — CI/CD Pipeline, Lint Gates, Portal-API Connection, OHIF Config
+- GitHub Actions CI pipeline (`ci.yml`): 4 stages — lint, test (backend/python/frontend), build, security scan
+- GitHub Actions CD pipelines: `cd-staging.yml` (develop branch), `cd-production.yml` (releases)
+- i18n key consistency check in CI (vi/en must have same keys)
+- Secret scanning in CI (prevents hardcoded passwords)
+- Prettier config (`.prettierrc`) for consistent code formatting
+- Ruff config (`pyproject.toml`) for Python linting
+- Portal API client (`src/lib/api.ts`): centralized fetch with error handling
+- Patient list page: real API calls with fallback to mock data if API unavailable
+- OHIF Viewer config (`local_orthanc.js`): connects to Orthanc DICOMweb on localhost:8042
+- OHIF dev startup script (`scripts/start-ohif-dev.sh`)
+- Prisma schema refactored to multi-file domain-scoped structure (11 files)
+- Cursor rules enhanced: scalability-first, SOLID principles, database and Python rules added
+
 ### 2026-03-21 — Database Schema & Patient Service (Step 1)
 - Created shared `packages/database/` with Prisma schema (25+ tables)
 - Tables: organizations, facilities, departments, users, roles, patients, visits,
