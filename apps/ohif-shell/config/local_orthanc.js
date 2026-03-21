@@ -22,6 +22,9 @@ window.config = {
         supportsWildcard: true,
         dicomUploadEnabled: true,
         omitQuotationForMultipartRequest: true,
+        requestOptions: {
+          auth: 'ohif:ohif_readonly',
+        },
       },
     },
   ],

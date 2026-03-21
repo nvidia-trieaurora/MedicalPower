@@ -53,6 +53,13 @@
   "ConcurrentJobs": 2,
   "HttpThreadsCount": 50,
 
+  "Cors": {
+    "AllowHeaders": "Content-Type, Authorization, Accept, Range",
+    "AllowMethods": "GET, POST, PUT, DELETE, OPTIONS",
+    "AllowOrigin": ["http://localhost:3000", "http://localhost:3001"],
+    "AllowCredentials": true
+  },
+
   "DicomModalities": {},
   "OrthancPeers": {}
 }
