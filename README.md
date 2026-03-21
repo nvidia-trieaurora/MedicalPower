@@ -28,41 +28,27 @@ Built on **OHIF Viewer**, **MONAI Label**, and a dedicated workflow management e
 ### Prerequisites
 
 - Node.js >= 20.9.0
-- pnpm >= 9.0.0
 - Docker & Docker Compose
-- NVIDIA GPU + CUDA (for MONAI Label — optional for non-AI development)
+- NVIDIA GPU + CUDA (optional — only for MONAI Label AI inference)
 
-### Setup
+### One Command Start
 
 ```bash
-# Clone with submodules
-git clone --recurse-submodules <repo-url>
+git clone --recurse-submodules https://github.com/nvidia-trieaurora/MedicalPower.git
 cd MedicalPower
-
-# Or initialize submodules after clone
-git submodule update --init --recursive
-
-# Install dependencies
-pnpm install
-
-# Start infrastructure (PostgreSQL, Redis, RabbitMQ, MinIO, Orthanc, Keycloak)
-cd infra/docker
-docker compose -f docker-compose.dev.yml up -d
-
-# Start MONAI Label (requires GPU)
-docker compose -f docker-compose.dev.yml --profile gpu up -d monai-label
-
-# Start development servers
-pnpm dev
+./scripts/dev.sh
 ```
 
-### Without GPU (skip MONAI Label)
+This starts Docker infrastructure, database, backend API, and portal web — all with one command.
 
-```bash
-cd infra/docker
-docker compose -f docker-compose.dev.yml up -d
-pnpm dev
-```
+| Service | URL |
+|---------|-----|
+| Portal Web | http://localhost:3000 |
+| Patient API | http://localhost:4002/api/v1/patients |
+| Swagger Docs | http://localhost:4002/docs |
+| Orthanc Admin | http://localhost:8042/ui/app/ |
+
+Press `Ctrl+C` to stop. See [Getting Started (VI)](docs/vi/getting-started.md) or [Getting Started (EN)](docs/en/getting-started.md) for detailed step-by-step instructions.
 
 ## Project Structure
 

@@ -2,6 +2,29 @@
 
 Step-by-step guide to set up and run MedicalPower locally.
 
+## Quick Start (1 command)
+
+If you have all prerequisites installed and Docker is running:
+
+```bash
+git clone --recurse-submodules https://github.com/nvidia-trieaurora/MedicalPower.git
+cd MedicalPower
+./scripts/dev.sh
+```
+
+This script automatically: starts Docker → waits for database → runs migrations → starts backend API → starts portal web.
+
+Result:
+- Portal Web: http://localhost:3000
+- Patient API: http://localhost:4002/api/v1/patients
+- Orthanc Admin: http://localhost:8042/ui/app/
+
+Press `Ctrl+C` to stop Portal + API. Docker infrastructure keeps running in background.
+
+---
+
+For detailed step-by-step instructions, read on below.
+
 ## Prerequisites
 
 | Software | Version | Check |
