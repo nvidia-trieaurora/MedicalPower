@@ -1,11 +1,7 @@
 {
   "Name": "MedicalPower DICOM Server",
   "RemoteAccessAllowed": true,
-  "AuthenticationEnabled": true,
-  "RegisteredUsers": {
-    "admin": "mp_admin_2026",
-    "ohif": "ohif_readonly"
-  },
+  "AuthenticationEnabled": false,
 
   "DicomPort": 4242,
   "HttpPort": 8042,

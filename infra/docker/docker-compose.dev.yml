@@ -90,8 +90,7 @@ services:
       - ../orthanc/custom-ui/branding.css:/usr/share/orthanc/explorer2/custom/branding.css:ro
     environment:
       ORTHANC__NAME: "MedicalPower DICOM Server"
-      ORTHANC__AUTHENTICATION_ENABLED: "true"
-      ORTHANC__REGISTERED_USERS: '{"admin": "mp_admin_2026", "ohif": "ohif_readonly"}'
+      ORTHANC__AUTHENTICATION_ENABLED: "false"
       ORTHANC__DICOM_WEB__ENABLE: "true"
       ORTHANC__DICOM_WEB__ROOT: "/dicom-web/"
       ORTHANC__ORTHANC_EXPLORER_2__ENABLE: "true"
@@ -111,7 +110,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "-u", "admin:mp_admin_2026", "http://localhost:8042/system"]
+      test: ["CMD", "curl", "-f", "http://localhost:8042/system"]
       interval: 15s
       timeout: 10s
       retries: 5
