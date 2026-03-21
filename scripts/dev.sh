@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+OHIF_DIR="$ROOT_DIR/vendor/ohif-viewers"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -10,6 +11,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
+WHITE='\033[1;37m'
 NC='\033[0m'
 
 log() { echo -e "${2:-$NC}[${1}]${NC} $3"; }
@@ -19,6 +21,13 @@ echo -e "${CYAN}============================================${NC}"
 echo -e "${CYAN}  MedicalPower — Development Environment${NC}"
 echo -e "${CYAN}============================================${NC}"
 echo ""
+
+SKIP_OHIF=false
+for arg in "$@"; do
+  case $arg in
+    --no-ohif) SKIP_OHIF=true ;;
+  esac
+done
 
 # ─── Check prerequisites ──────────────────────────────────────
 log "CHECK" "$BLUE" "Checking prerequisites..."
@@ -34,6 +43,15 @@ check_cmd "node" "Install Node.js >= 20.9.0"
 check_cmd "docker" "Install Docker Desktop"
 check_cmd "npm" "Install npm"
 
+HAS_YARN=true
+if ! command -v yarn &> /dev/null; then
+  HAS_YARN=false
+  if [ "$SKIP_OHIF" = false ]; then
+    log "WARN" "$YELLOW" "yarn not found — OHIF Viewer will be skipped. Install: npm install -g yarn"
+    SKIP_OHIF=true
+  fi
+fi
+
 # ─── Check ports ──────────────────────────────────────────────
 check_port() {
   if lsof -i ":$1" &> /dev/null; then
@@ -46,11 +64,14 @@ check_port() {
 PORTS_OK=true
 check_port 3000 "Portal Web" || PORTS_OK=false
 check_port 4002 "patient-service" || PORTS_OK=false
+if [ "$SKIP_OHIF" = false ]; then
+  check_port 3001 "OHIF Viewer" || PORTS_OK=false
+fi
 check_port 5432 "PostgreSQL" || true
 check_port 8042 "Orthanc" || true
 
 if [ "$PORTS_OK" = false ]; then
-  log "WARN" "$YELLOW" "Some app ports are in use. Services on those ports will fail to start."
+  log "WARN" "$YELLOW" "Some app ports are in use. Services on those ports may fail to start."
   echo ""
 fi
 
@@ -108,15 +129,39 @@ if [ ! -d "dist" ]; then
   npx nest build 2>&1
 fi
 
-# ─── Stage 4: Start services ────────────────────────────────
+# ─── Stage 4: Prepare OHIF Viewer ────────────────────────────
+if [ "$SKIP_OHIF" = false ]; then
+  log "OHIF" "$WHITE" "Preparing OHIF Viewer..."
+
+  if [ ! -d "$OHIF_DIR" ]; then
+    log "ERROR" "$RED" "OHIF Viewers not found. Run: git submodule update --init --recursive"
+    SKIP_OHIF=true
+  else
+    cp "$ROOT_DIR/apps/ohif-shell/config/local_orthanc.js" "$OHIF_DIR/platform/app/public/config/local_orthanc.js"
+
+    if [ ! -d "$OHIF_DIR/node_modules" ]; then
+      log "OHIF" "$WHITE" "Installing OHIF dependencies (first time — may take 5-10 minutes)..."
+      cd "$OHIF_DIR"
+      yarn install --frozen-lockfile 2>&1 | tail -3 || yarn install 2>&1 | tail -3
+      log "OHIF" "$GREEN" "OHIF dependencies installed"
+    fi
+  fi
+fi
+
+# ─── Stage 5: Start all services ────────────────────────────
 log "START" "$GREEN" "Starting all services..."
 echo ""
+
+PID_API=""
+PID_PORTAL=""
+PID_OHIF=""
 
 cleanup() {
   echo ""
   log "STOP" "$YELLOW" "Shutting down services..."
-  kill $PID_API 2>/dev/null || true
-  kill $PID_PORTAL 2>/dev/null || true
+  [ -n "$PID_API" ] && kill $PID_API 2>/dev/null || true
+  [ -n "$PID_PORTAL" ] && kill $PID_PORTAL 2>/dev/null || true
+  [ -n "$PID_OHIF" ] && kill $PID_OHIF 2>/dev/null || true
   log "STOP" "$GREEN" "Services stopped. Docker infra still running."
   log "STOP" "$PURPLE" "To stop Docker: cd infra/docker && docker compose -f docker-compose.dev.yml down"
   exit 0
@@ -124,6 +169,7 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM
 
+# Start patient-service
 cd "$ROOT_DIR/services/patient-service"
 DATABASE_URL="postgresql://mp_admin:mp_secret_dev@localhost:5432/medicalpower?schema=public" \
   node dist/main.js 2>&1 | sed "s/^/$(printf "${CYAN}[API]${NC} ")/" &
@@ -131,6 +177,7 @@ PID_API=$!
 
 sleep 2
 
+# Start portal-web
 cd "$ROOT_DIR/apps/portal-web"
 if [ ! -d "node_modules" ]; then
   log "WEB" "$BLUE" "Installing portal-web dependencies..."
@@ -140,7 +187,15 @@ fi
 npm run dev 2>&1 | sed "s/^/$(printf "${GREEN}[WEB]${NC} ")/" &
 PID_PORTAL=$!
 
-sleep 3
+# Start OHIF Viewer
+if [ "$SKIP_OHIF" = false ]; then
+  sleep 2
+  cd "$OHIF_DIR"
+  APP_CONFIG=config/local_orthanc.js PORT=3001 yarn run dev 2>&1 | sed "s/^/$(printf "${WHITE}[OHIF]${NC} ")/" &
+  PID_OHIF=$!
+fi
+
+sleep 4
 
 echo ""
 echo -e "${GREEN}============================================${NC}"
@@ -151,11 +206,12 @@ echo -e "  ${GREEN}Portal Web:${NC}      http://localhost:3000"
 echo -e "  ${CYAN}Patient API:${NC}     http://localhost:4002/api/v1/patients"
 echo -e "  ${CYAN}Swagger Docs:${NC}    http://localhost:4002/docs"
 echo -e "  ${PURPLE}Orthanc Admin:${NC}   http://localhost:8042/ui/app/"
-echo -e "  ${PURPLE}PostgreSQL:${NC}      localhost:5432"
+if [ "$SKIP_OHIF" = false ]; then
+echo -e "  ${WHITE}OHIF Viewer:${NC}     http://localhost:3001"
+echo -e "  ${WHITE}View CT Scan:${NC}    http://localhost:3001/viewer?StudyInstanceUIDs=1.2.840.113704.1.111.13428.1678778829.1"
+fi
 echo ""
-echo -e "  ${YELLOW}OHIF Viewer:${NC}     Run separately: ./scripts/start-ohif-dev.sh"
-echo ""
-echo -e "  Press ${RED}Ctrl+C${NC} to stop Portal + API (Docker keeps running)"
+echo -e "  Press ${RED}Ctrl+C${NC} to stop all app services (Docker keeps running)"
 echo ""
 
 wait
