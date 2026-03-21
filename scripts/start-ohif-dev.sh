@@ -40,4 +40,10 @@ echo "  OHIF:     http://localhost:3001"
 echo "  View BUI TRONG TINH: http://localhost:3001/viewer?StudyInstanceUIDs=1.2.840.113704.1.111.13428.1678778829.1"
 echo ""
 
-APP_CONFIG=config/local_orthanc.js OHIF_PORT=3001 yarn run dev
+APP_CONFIG=config/local_orthanc.js \
+  OHIF_PORT=3001 \
+  PROXY_TARGET=http://localhost:8042 \
+  PROXY_DOMAIN=http://localhost:8042 \
+  PROXY_PATH_REWRITE_FROM=/pacs \
+  PROXY_PATH_REWRITE_TO=/ \
+  yarn run dev

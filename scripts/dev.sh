@@ -191,7 +191,13 @@ PID_PORTAL=$!
 if [ "$SKIP_OHIF" = false ]; then
   sleep 2
   cd "$OHIF_DIR"
-  APP_CONFIG=config/local_orthanc.js OHIF_PORT=3001 yarn run dev 2>&1 | sed "s/^/$(printf "${WHITE}[OHIF]${NC} ")/" &
+  APP_CONFIG=config/local_orthanc.js \
+  OHIF_PORT=3001 \
+  PROXY_TARGET=http://localhost:8042 \
+  PROXY_DOMAIN=http://localhost:8042 \
+  PROXY_PATH_REWRITE_FROM=/pacs \
+  PROXY_PATH_REWRITE_TO=/ \
+  yarn run dev 2>&1 | sed "s/^/$(printf "${WHITE}[OHIF]${NC} ")/" &
   PID_OHIF=$!
 fi
 
