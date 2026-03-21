@@ -12,7 +12,16 @@ Built on **OHIF Viewer**, **MONAI Label**, and a dedicated workflow management e
 - **Segmentation Service** — FastAPI service orchestrating MONAI Label AI inference
 - **Infrastructure** — PostgreSQL, Redis, RabbitMQ, MinIO, Orthanc, Keycloak
 
-See [docs/PLANNING.md](docs/PLANNING.md) for the full architecture and planning document.
+## Documentation
+
+| Document | Ngôn ngữ | Mô tả |
+|----------|---------|-------|
+| [Getting Started (VI)](docs/vi/getting-started.md) | Tiếng Việt | Hướng dẫn cài đặt và chạy từng bước |
+| [Getting Started (EN)](docs/en/getting-started.md) | English | Step-by-step setup and run guide |
+| [PLANNING.md](docs/PLANNING.md) | Bilingual | Full architecture and planning (3600+ lines) |
+| [CLAUDE.md](CLAUDE.md) | English | Project rules, conventions, architecture decisions |
+| [Infrastructure](docs/en/infrastructure.md) | English | Database, Docker, ports reference |
+| [CHANGELOG](docs/CHANGELOG.md) | English | Dated log of all changes |
 
 ## Quick Start
 
