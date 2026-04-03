@@ -1,32 +1,29 @@
 {
   "extensions": [
-    {
-      "packageName": "@ohif/extension-default"
-    },
-    {
-      "packageName": "@ohif/extension-cornerstone"
-    },
-    {
-      "packageName": "@ohif/extension-cornerstone-dicom-sr"
-    },
-    {
-      "packageName": "@ohif/extension-cornerstone-dicom-seg"
-    },
-    {
-      "packageName": "@ohif/extension-measurement-tracking"
-    },
-    {
-      "packageName": "@ohif/extension-monai-label",
-      "version": "0.8.5"
-    }
+    { "packageName": "@ohif/extension-default" },
+    { "packageName": "@ohif/extension-cornerstone" },
+    { "packageName": "@ohif/extension-measurement-tracking" },
+    { "packageName": "@ohif/extension-cornerstone-dicom-sr" },
+    { "packageName": "@ohif/extension-cornerstone-dicom-seg" },
+    { "packageName": "@ohif/extension-cornerstone-dicom-pmap" },
+    { "packageName": "@ohif/extension-cornerstone-dicom-rt" },
+    { "packageName": "@ohif/extension-cornerstone-dynamic-volume" },
+    { "packageName": "@ohif/extension-dicom-pdf" },
+    { "packageName": "@ohif/extension-dicom-video" },
+    { "packageName": "@ohif/extension-dicom-microscopy" },
+    { "packageName": "@ohif/extension-tmtv" },
+    { "packageName": "@ohif/extension-monai-label" }
   ],
   "modes": [
-    {
-      "packageName": "@ohif/mode-longitudinal"
-    },
-    {
-      "packageName": "@ohif/mode-monai-label",
-      "version": "0.8.5"
-    }
+    { "packageName": "@ohif/mode-longitudinal" },
+    { "packageName": "@ohif/mode-basic" },
+    { "packageName": "@ohif/mode-segmentation" },
+    { "packageName": "@ohif/mode-tmtv" },
+    { "packageName": "@ohif/mode-microscopy" },
+    { "packageName": "@ohif/mode-preclinical-4d" },
+    { "packageName": "@ohif/mode-monai-label" }
+  ],
+  "public": [
+    { "directory": "./platform/public" }
   ]
 }

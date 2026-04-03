@@ -64,6 +64,7 @@ check_port() {
 PORTS_OK=true
 check_port 3000 "Portal Web" || PORTS_OK=false
 check_port 4002 "patient-service" || PORTS_OK=false
+check_port 4006 "workflow-service" || PORTS_OK=false
 if [ "$SKIP_OHIF" = false ]; then
   check_port 3001 "OHIF Viewer" || PORTS_OK=false
 fi
@@ -114,20 +115,26 @@ npx prisma migrate deploy --schema=prisma/schema 2>&1 | grep -E "applied|already
 npx prisma generate --schema=prisma/schema 2>&1 | grep -E "Generated|already" || true
 log "DB" "$GREEN" "Database is ready"
 
-# ─── Stage 3: Build patient-service if needed ────────────────
-log "API" "$CYAN" "Preparing patient-service..."
-cd "$ROOT_DIR/services/patient-service"
+# ─── Stage 3: Build backend services ─────────────────────────
+for svc in patient-service workflow-service; do
+  log "API" "$CYAN" "Preparing $svc..."
+  cd "$ROOT_DIR/services/$svc"
 
-if [ ! -d "node_modules" ]; then
-  log "API" "$CYAN" "Installing patient-service dependencies..."
-  npm install --silent 2>&1 | tail -1
+  if [ ! -d "node_modules" ]; then
+    log "API" "$CYAN" "Installing $svc dependencies..."
+    npm install --silent 2>&1 | tail -1
+  fi
+
   npx prisma generate --schema=../../packages/database/prisma/schema 2>&1 | grep -E "Generated" || true
-fi
+  mkdir -p node_modules/.prisma/client
+  cp -r ../../packages/database/node_modules/.prisma/client/* node_modules/.prisma/client/ 2>/dev/null || true
+  cp -r ../../packages/database/node_modules/@prisma/client/* node_modules/@prisma/client/ 2>/dev/null || true
 
-if [ ! -d "dist" ]; then
-  log "API" "$CYAN" "Building patient-service..."
-  npx nest build 2>&1
-fi
+  if [ ! -d "dist" ] || [ "$(find src -newer dist/main.js -name '*.ts' 2>/dev/null | head -1)" ]; then
+    log "API" "$CYAN" "Building $svc..."
+    npx nest build 2>&1
+  fi
+done
 
 # ─── Stage 4: Prepare OHIF Viewer ────────────────────────────
 if [ "$SKIP_OHIF" = false ]; then
@@ -152,14 +159,16 @@ fi
 log "START" "$GREEN" "Starting all services..."
 echo ""
 
-PID_API=""
+PID_PATIENT=""
+PID_WORKFLOW=""
 PID_PORTAL=""
 PID_OHIF=""
 
 cleanup() {
   echo ""
   log "STOP" "$YELLOW" "Shutting down services..."
-  [ -n "$PID_API" ] && kill $PID_API 2>/dev/null || true
+  [ -n "$PID_PATIENT" ] && kill $PID_PATIENT 2>/dev/null || true
+  [ -n "$PID_WORKFLOW" ] && kill $PID_WORKFLOW 2>/dev/null || true
   [ -n "$PID_PORTAL" ] && kill $PID_PORTAL 2>/dev/null || true
   [ -n "$PID_OHIF" ] && kill $PID_OHIF 2>/dev/null || true
   log "STOP" "$GREEN" "Services stopped. Docker infra still running."
@@ -169,11 +178,17 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM
 
-# Start patient-service
+# Start patient-service (:4002)
 cd "$ROOT_DIR/services/patient-service"
 DATABASE_URL="postgresql://mp_admin:mp_secret_dev@localhost:5432/medicalpower?schema=public" \
-  node dist/main.js 2>&1 | sed "s/^/$(printf "${CYAN}[API]${NC} ")/" &
-PID_API=$!
+  node dist/main.js 2>&1 | sed "s/^/$(printf "${CYAN}[patient-api]${NC} ")/" &
+PID_PATIENT=$!
+
+# Start workflow-service (:4006)
+cd "$ROOT_DIR/services/workflow-service"
+DATABASE_URL="postgresql://mp_admin:mp_secret_dev@localhost:5432/medicalpower?schema=public" \
+  node dist/main.js 2>&1 | sed "s/^/$(printf "${PURPLE}[workflow-api]${NC} ")/" &
+PID_WORKFLOW=$!
 
 sleep 2
 
@@ -210,7 +225,9 @@ echo -e "${GREEN}============================================${NC}"
 echo ""
 echo -e "  ${GREEN}Portal Web:${NC}      http://localhost:3000"
 echo -e "  ${CYAN}Patient API:${NC}     http://localhost:4002/api/v1/patients"
-echo -e "  ${CYAN}Swagger Docs:${NC}    http://localhost:4002/docs"
+echo -e "  ${CYAN}Patient Docs:${NC}    http://localhost:4002/docs"
+echo -e "  ${PURPLE}Workflow API:${NC}    http://localhost:4006/api/v1/cases"
+echo -e "  ${PURPLE}Workflow Docs:${NC}   http://localhost:4006/docs"
 echo -e "  ${PURPLE}Orthanc Admin:${NC}   http://localhost:8042/ui/app/"
 if [ "$SKIP_OHIF" = false ]; then
 echo -e "  ${WHITE}OHIF Viewer:${NC}     http://localhost:3001"

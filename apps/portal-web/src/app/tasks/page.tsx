@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ExternalLink, Filter, Play, Send, Eye } from 'lucide-react';
+import { ExternalLink, Filter, Play, Send, Eye, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +14,44 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { mockTasks } from '@/lib/mock-data';
+import { taskApi, type Task as ApiTask } from '@/lib/api';
+import { mockTasks, type Task as MockTask } from '@/lib/mock-data';
+import { getViewerUrl } from '@/lib/viewer';
+import { useLocale } from '@/lib/locale-context';
+import { useToast } from '@/components/ui/toast';
+
+type TaskRow = MockTask | ApiTask;
+
+function getCaseTitle(task: TaskRow): string {
+  if ('caseTitle' in task && task.caseTitle) return task.caseTitle;
+  if ('case' in task && task.case?.title) return task.case.title;
+  return '—';
+}
+
+function getPatientName(task: TaskRow): string {
+  if ('patientName' in task && task.patientName) return task.patientName;
+  if ('case' in task && task.case?.patient?.fullName) return task.case.patient.fullName;
+  return '—';
+}
+
+function getStudyUid(task: TaskRow): string {
+  if ('studyUid' in task && task.studyUid) return task.studyUid;
+  if ('case' in task) return task.case?.studyLinks?.[0]?.study.studyInstanceUid ?? '';
+  return '';
+}
+
+function getModality(task: TaskRow): string {
+  if ('modality' in task && task.modality) return task.modality;
+  if ('case' in task) return task.case?.studyLinks?.[0]?.study.modality ?? '—';
+  return '—';
+}
+
+function getAssignedToName(task: TaskRow): string | null {
+  const a = task.assignedTo;
+  if (a == null) return null;
+  if (typeof a === 'string') return a;
+  return a.fullName ?? null;
+}
 
 const priorityColor: Record<string, string> = {
   critical: 'bg-red-100 text-red-800',
@@ -34,99 +71,100 @@ const statusColor: Record<string, string> = {
   completed: 'bg-green-100 text-green-700',
 };
 
-const statusLabel: Record<string, string> = {
-  created: 'Đã tạo',
-  assigned: 'Đã giao',
-  in_progress: 'Đang thực hiện',
-  submitted: 'Đã gửi',
-  in_review: 'Đang duyệt',
-  approved: 'Đã duyệt',
-  rejected: 'Từ chối',
-  completed: 'Hoàn thành',
-};
+function TaskCard({ task, onRefresh }: { task: TaskRow; onRefresh: () => void }) {
+  const { locale, t } = useLocale();
+  const { showToast } = useToast();
+  const [actionLoading, setActionLoading] = useState(false);
 
-const typeLabel: Record<string, string> = {
-  annotate: 'Chú thích',
-  review: 'Duyệt',
-  adjudicate: 'Phân xử',
-  diagnose: 'Chẩn đoán',
-  report: 'Báo cáo',
-};
+  const handleTransition = async (action: string) => {
+    setActionLoading(true);
+    try {
+      await taskApi.transition(task.id, action);
+      showToast({ type: 'success', title: t('workflow.task.status.' + action) || action });
+      onRefresh();
+    } catch {
+      showToast({ type: 'error', title: vi ? 'Thao tác thất bại' : 'Action failed' });
+    }
+    setActionLoading(false);
+  };
 
-function TaskCard({ task }: { task: (typeof mockTasks)[0] }) {
-  const ohifBase = process.env.NEXT_PUBLIC_OHIF_URL || 'http://localhost:8042';
-  const viewerUrl = `${ohifBase}/ohif/viewer?StudyInstanceUIDs=${task.studyUid}&taskId=${task.id}&caseId=${task.caseId}&patientName=${encodeURIComponent(task.patientName)}&taskType=${task.type}`;
+  const vi = locale === 'vi';
+
+  const viewerUrl = getViewerUrl({
+    studyInstanceUid: getStudyUid(task),
+    taskId: task.id,
+    caseId: task.caseId,
+    patientName: getPatientName(task),
+    taskType: task.type,
+  });
+
+  const dateLocale = locale === 'vi' ? 'vi-VN' : 'en-US';
+
+  const handleCardClick = () => { window.location.href = `/tasks/${task.id}`; };
 
   return (
-    <div className="flex items-center justify-between rounded-lg border bg-card p-4 transition-shadow hover:shadow-sm">
+    <div onClick={handleCardClick} className="flex items-center justify-between rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50 cursor-pointer">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-medium">{task.caseTitle}</p>
+          <p className="truncate text-sm font-medium">{getCaseTitle(task)}</p>
           <Badge variant="secondary" className={priorityColor[task.priority]}>
             {task.priority}
           </Badge>
         </div>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          {task.patientName} &middot; {task.modality} &middot; {typeLabel[task.type]}
+          {getPatientName(task)} &middot;
+          <Badge variant="outline" className="mx-1 text-[10px] px-1.5 py-0">{getModality(task)}</Badge>
+          &middot; {t('workflow.task.type.' + task.type)}
         </p>
         {task.slaDeadline && (
           <p className="mt-1 text-xs text-muted-foreground">
-            Hạn: {new Date(task.slaDeadline).toLocaleString('vi-VN')}
+            {t('common.label.deadline', { deadline: new Date(task.slaDeadline).toLocaleString(dateLocale) })}
           </p>
         )}
       </div>
 
-      <div className="flex items-center gap-2 ml-4">
+      <div className="flex items-center gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
         <Badge variant="secondary" className={statusColor[task.status]}>
-          {statusLabel[task.status]}
+          {t('workflow.task.status.' + task.status)}
         </Badge>
 
         {task.status === 'assigned' && (
-          <Button size="sm" variant="default" onClick={() => alert(`Bắt đầu task ${task.id} (Demo)`)}>
+          <Button size="sm" variant="default" disabled={actionLoading} onClick={() => handleTransition('start')}>
             <Play className="mr-1 h-3 w-3" />
-            Bắt đầu
+            {t('workflow.task.action.start')}
           </Button>
         )}
 
         {task.status === 'in_progress' && (
           <>
-            <a
-              href={viewerUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-sm font-medium text-primary-foreground hover:bg-primary/80"
-            >
-              <ExternalLink className="h-3 w-3" />
-              Mở Viewer
+            <a href={viewerUrl} target="_blank" rel="noopener noreferrer">
+              <Button size="sm" variant="default" className="gap-1.5 transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-primary/25 active:scale-95">
+                <ExternalLink className="h-3.5 w-3.5" />
+                {t('common.action.openViewer')}
+              </Button>
             </a>
-            <Button size="sm" variant="outline" onClick={() => alert(`Gửi duyệt task ${task.id} (Demo)`)}>
+            <Button size="sm" variant="outline" disabled={actionLoading} onClick={() => handleTransition('submit')}>
               <Send className="mr-1 h-3 w-3" />
-              Gửi duyệt
+              {t('common.action.submitReview')}
             </Button>
           </>
         )}
 
         {task.status === 'in_review' && (
-          <a
-            href={viewerUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-sm font-medium text-primary-foreground hover:bg-primary/80"
-          >
-            <Eye className="h-3 w-3" />
-            Xem & Duyệt
+          <a href={viewerUrl} target="_blank" rel="noopener noreferrer">
+            <Button size="sm" variant="default" className="gap-1.5 transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-primary/25 active:scale-95">
+              <Eye className="h-3.5 w-3.5" />
+              {t('common.action.viewAndReview')}
+            </Button>
           </a>
         )}
 
         {['completed', 'approved'].includes(task.status) && (
-          <a
-            href={viewerUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <Eye className="h-3 w-3" />
-            Xem
+          <a href={viewerUrl} target="_blank" rel="noopener noreferrer">
+            <Button size="sm" variant="ghost" className="gap-1.5 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-foreground active:scale-95">
+              <Eye className="h-3.5 w-3.5" />
+              {t('common.action.view')}
+            </Button>
           </a>
         )}
       </div>
@@ -135,69 +173,89 @@ function TaskCard({ task }: { task: (typeof mockTasks)[0] }) {
 }
 
 export default function TasksPage() {
+  const { t } = useLocale();
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [tasks, setTasks] = useState<TaskRow[]>(mockTasks);
 
-  const myTasks = mockTasks.filter((t) => t.assignedTo === 'Nguyễn Thị Mai');
-  const activeTasks = mockTasks.filter((t) => !['completed', 'approved'].includes(t.status));
-  const completedTasks = mockTasks.filter((t) => ['completed', 'approved'].includes(t.status));
+  const refreshTasks = async () => {
+    try {
+      const res = await taskApi.list();
+      setTasks(res.data);
+    } catch {
+      setTasks(mockTasks);
+    }
+  };
 
-  const filterByType = (tasks: typeof mockTasks) =>
-    typeFilter === 'all' ? tasks : tasks.filter((t) => t.type === typeFilter);
+  useEffect(() => {
+    refreshTasks();
+  }, []);
+
+  const myTasks = tasks.filter((task) => getAssignedToName(task) === 'Nguyễn Thị Mai');
+  const activeTasks = tasks.filter((task) => !['completed', 'approved'].includes(task.status));
+  const completedTasks = tasks.filter((task) => ['completed', 'approved'].includes(task.status));
+
+  const filterByType = (list: TaskRow[]) =>
+    typeFilter === 'all' ? list : list.filter((task) => task.type === typeFilter);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Quản lý Nhiệm vụ</h1>
+          <h1 className="text-2xl font-bold">{t('workflow.task.title')}</h1>
           <p className="text-sm text-muted-foreground">
-            {activeTasks.length} nhiệm vụ đang hoạt động
+            {t('workflow.task.activeCount', { count: String(activeTasks.length) })}
           </p>
         </div>
+        <div className="flex items-center gap-2">
+        <Link href="/tasks/new">
+          <Button className="gap-1.5"><Plus className="h-4 w-4" />{t('workflow.task.create')}</Button>
+        </Link>
         <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v ?? 'all')}>
           <SelectTrigger className="w-40">
             <Filter className="mr-2 h-4 w-4" />
-            <SelectValue placeholder="Loại" />
+            <SelectValue placeholder={t('workflow.task.filter.type')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tất cả</SelectItem>
-            <SelectItem value="annotate">Chú thích</SelectItem>
-            <SelectItem value="review">Duyệt</SelectItem>
-            <SelectItem value="adjudicate">Phân xử</SelectItem>
-            <SelectItem value="diagnose">Chẩn đoán</SelectItem>
-            <SelectItem value="report">Báo cáo</SelectItem>
+            <SelectItem value="all">{t('workflow.task.filter.all')}</SelectItem>
+            <SelectItem value="annotate">{t('workflow.task.type.annotate')}</SelectItem>
+            <SelectItem value="review">{t('workflow.task.type.review')}</SelectItem>
+            <SelectItem value="adjudicate">{t('workflow.task.type.adjudicate')}</SelectItem>
+            <SelectItem value="diagnose">{t('workflow.task.type.diagnose')}</SelectItem>
+            <SelectItem value="report">{t('workflow.task.type.report')}</SelectItem>
           </SelectContent>
         </Select>
+        </div>
       </div>
 
       <Tabs defaultValue="mine">
         <TabsList>
-          <TabsTrigger value="mine">Của tôi ({myTasks.length})</TabsTrigger>
-          <TabsTrigger value="active">Đang hoạt động ({activeTasks.length})</TabsTrigger>
-          <TabsTrigger value="completed">Hoàn thành ({completedTasks.length})</TabsTrigger>
+          <TabsTrigger value="mine">{t('workflow.task.myTasks')} ({myTasks.length})</TabsTrigger>
+          <TabsTrigger value="active">{t('workflow.task.active')} ({activeTasks.length})</TabsTrigger>
+          <TabsTrigger value="completed">{t('workflow.task.completed')} ({completedTasks.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="mine" className="mt-4 space-y-3">
           {filterByType(myTasks).length === 0 && (
             <Card>
               <CardContent className="flex h-24 items-center justify-center text-muted-foreground">
-                Không có nhiệm vụ nào
+                {t('workflow.task.empty')}
               </CardContent>
             </Card>
           )}
           {filterByType(myTasks).map((task) => (
-            <TaskCard key={task.id} task={task} />
+            <TaskCard key={task.id} task={task} onRefresh={refreshTasks} />
           ))}
         </TabsContent>
 
         <TabsContent value="active" className="mt-4 space-y-3">
           {filterByType(activeTasks).map((task) => (
-            <TaskCard key={task.id} task={task} />
+            <TaskCard key={task.id} task={task} onRefresh={refreshTasks} />
           ))}
         </TabsContent>
 
         <TabsContent value="completed" className="mt-4 space-y-3">
           {filterByType(completedTasks).map((task) => (
-            <TaskCard key={task.id} task={task} />
+            <TaskCard key={task.id} task={task} onRefresh={refreshTasks} />
           ))}
         </TabsContent>
       </Tabs>

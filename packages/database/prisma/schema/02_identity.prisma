@@ -24,6 +24,9 @@ model User {
   reviewDecisions    ReviewDecision[]
   notifications      Notification[]
   auditLogs          AuditLog[]
+  permissions        UserPermission[]    @relation("UserPermissions")
+  grantedPermissions UserPermission[]    @relation("PermissionGranter")
+  taskComments       TaskComment[]       @relation("TaskComments")
 
   @@map("users")
 }

@@ -34,6 +34,11 @@ window.config = {
 
   defaultDataSourceName: 'orthanc',
 
+  medicalpower: {
+    apiUrl: '/api/v1',
+    monaiLabelUrl: '/monai/',
+  },
+
   oidc: [
     {
       authority: 'http://localhost:8080/realms/medicalpower',

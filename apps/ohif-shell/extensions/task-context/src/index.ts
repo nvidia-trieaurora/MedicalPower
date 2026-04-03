@@ -8,6 +8,7 @@ interface TaskContext {
   patientName?: string;
   priority?: string;
   taskType?: string;
+  studyInstanceUid?: string;
 }
 
 function parseTaskContextFromUrl(): TaskContext | null {
@@ -23,6 +24,7 @@ function parseTaskContextFromUrl(): TaskContext | null {
     patientName: params.get('patientName') || undefined,
     priority: params.get('priority') || undefined,
     taskType: params.get('taskType') || undefined,
+    studyInstanceUid: params.get('StudyInstanceUIDs') || undefined,
   };
 }
 
@@ -35,6 +37,27 @@ const taskContextExtension: Types.Extensions.Extension = {
       console.log(`${EXTENSION_ID}: Task context loaded`, context);
       (window as any).__medicalpower_task_context = context;
     }
+  },
+
+  getCommandsModule: ({ servicesManager }) => {
+    return {
+      definitions: {
+        getTaskContext: {
+          commandFn: () => (window as any).__medicalpower_task_context || null,
+        },
+        setTaskContext: {
+          commandFn: ({ context }: { context: TaskContext }) => {
+            (window as any).__medicalpower_task_context = context;
+          },
+        },
+        clearTaskContext: {
+          commandFn: () => {
+            delete (window as any).__medicalpower_task_context;
+          },
+        },
+      },
+      defaultContext: 'VIEWER',
+    };
   },
 
   getPanelModule: ({ servicesManager }) => {

@@ -71,3 +71,4 @@ orthanc-db/
 # Temporary
 tmp/
 temp/
+.gitnexus

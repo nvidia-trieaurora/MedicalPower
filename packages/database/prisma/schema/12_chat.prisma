@@ -1,0 +1,21 @@
+// ============================================================
+// Domain: Task Collaboration — P2P Chat
+// Owner: workflow-service
+// Real-time comments within task context
+// ============================================================
+
+model TaskComment {
+  id        String   @id @default(uuid())
+  taskId    String   @map("task_id")
+  userId    String   @map("user_id")
+  message   String
+  type      String   @default("text") // text, status_change, file
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  task Task @relation(fields: [taskId], references: [id])
+  user User @relation("TaskComments", fields: [userId], references: [id])
+
+  @@index([taskId, createdAt])
+  @@map("task_comments")
+}

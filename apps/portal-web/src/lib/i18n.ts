@@ -10,12 +10,16 @@ import annotationEn from '../../../../packages/i18n/locales/en/annotation.json';
 import annotationVi from '../../../../packages/i18n/locales/vi/annotation.json';
 import medicalEn from '../../../../packages/i18n/locales/en/medical.json';
 import medicalVi from '../../../../packages/i18n/locales/vi/medical.json';
+import authEn from '../../../../packages/i18n/locales/en/auth.json';
+import authVi from '../../../../packages/i18n/locales/vi/auth.json';
+import adminEn from '../../../../packages/i18n/locales/en/admin.json';
+import adminVi from '../../../../packages/i18n/locales/vi/admin.json';
 
 export type Locale = 'vi' | 'en';
 
 const translations: Record<Locale, Record<string, string>> = {
-  en: { ...commonEn, ...patientEn, ...caseEn, ...workflowEn, ...annotationEn, ...medicalEn },
-  vi: { ...commonVi, ...patientVi, ...caseVi, ...workflowVi, ...annotationVi, ...medicalVi },
+  en: { ...commonEn, ...patientEn, ...caseEn, ...workflowEn, ...annotationEn, ...medicalEn, ...authEn, ...adminEn },
+  vi: { ...commonVi, ...patientVi, ...caseVi, ...workflowVi, ...annotationVi, ...medicalVi, ...authVi, ...adminVi },
 };
 
 export function t(key: string, locale: Locale = 'vi', params?: Record<string, string>): string {

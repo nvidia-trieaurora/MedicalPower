@@ -60,6 +60,7 @@ model Task {
   assignedTo         User?             @relation("TaskAssignee", fields: [assignedToId], references: [id])
   annotationSessions AnnotationSession[]
   reviewDecisions    ReviewDecision[]
+  comments           TaskComment[]
 
   @@index([caseId])
   @@index([assignedToId])

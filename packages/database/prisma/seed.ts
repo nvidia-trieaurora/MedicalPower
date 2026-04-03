@@ -107,8 +107,8 @@ async function main() {
 
   console.log('✓ Users: 4 users created');
 
-  // 6. Patients
-  const patBui = await prisma.patient.create({
+  // 6. Patients (real clinical data — BV Thống Nhất)
+  const patBuiTinh = await prisma.patient.create({
     data: {
       mrn: '23057406',
       fullName: 'Bùi Trọng Tình',
@@ -120,64 +120,40 @@ async function main() {
     },
   });
 
-  const patTran = await prisma.patient.create({
+  const patBuiLam = await prisma.patient.create({
     data: {
-      mrn: 'VN-HCM-2026-001235',
-      fullName: 'Trần Thị Bích',
-      dob: new Date('1992-03-22'),
-      gender: 'female',
+      mrn: '15122510',
+      fullName: 'Bùi Viết Lâm',
+      dob: new Date('1970-01-01'),
+      gender: 'male',
       phone: '+84 908 234 567',
-      address: '45 Lê Lợi, Q.3, TP.HCM',
+      address: 'TP.HCM',
       organizationId: org.id,
     },
   });
 
-  const patPham = await prisma.patient.create({
+  const patBuiThiem = await prisma.patient.create({
     data: {
-      mrn: 'VN-HN-2026-000891',
-      fullName: 'Phạm Minh Cường',
-      dob: new Date('1978-11-08'),
+      mrn: '13093945',
+      fullName: 'Bùi Thế Thiêm',
+      dob: new Date('1965-01-01'),
       gender: 'male',
       phone: '+84 912 345 678',
-      address: '78 Trần Hưng Đạo, Hoàn Kiếm, Hà Nội',
+      address: 'TP.HCM',
       organizationId: org.id,
     },
   });
 
-  const patLe = await prisma.patient.create({
-    data: {
-      mrn: 'VN-DN-2026-000456',
-      fullName: 'Lê Thị Dung',
-      dob: new Date('2001-06-30'),
-      gender: 'female',
-      phone: '+84 905 456 789',
-      address: '12 Bạch Đằng, Hải Châu, Đà Nẵng',
-      organizationId: org.id,
-    },
-  });
+  console.log('✓ Patients: 3 patients created (real clinical data)');
 
-  const patHoang = await prisma.patient.create({
-    data: {
-      mrn: 'VN-HCM-2026-001240',
-      fullName: 'Hoàng Đức Em',
-      dob: new Date('1965-01-12'),
-      gender: 'male',
-      phone: '+84 903 567 890',
-      address: '200 Võ Văn Tần, Q.3, TP.HCM',
-      organizationId: org.id,
-    },
-  });
-
-  console.log('✓ Patients: 5 patients created');
-
-  // 7. Studies (DICOM metadata cache — matches Orthanc data)
-  const studyBui = await prisma.study.create({
+  // 7. Studies (DICOM metadata cache — matches actual Orthanc data)
+  const studyTinh1 = await prisma.study.create({
     data: {
       studyInstanceUid: '1.2.840.113704.1.111.13428.1678778829.1',
-      patientId: patBui.id,
+      patientId: patBuiTinh.id,
       modality: 'CT',
       studyDate: new Date('2023-03-14'),
-      description: 'CT cột sống cổ có tiêm thuốc cản quang - Abscess',
+      description: 'CT cột sống cổ có tiêm thuốc cản quang',
       accessionNumber: '1575267',
       institutionName: 'BV THONG NHAT',
       referringPhysician: 'Do Bao Ngoc',
@@ -187,33 +163,71 @@ async function main() {
     },
   });
 
-  const studyTran = await prisma.study.create({
+  const studyTinh2 = await prisma.study.create({
     data: {
-      studyInstanceUid: '1.2.840.113654.2.70.1.1002',
-      patientId: patTran.id,
-      modality: 'MRI',
-      studyDate: new Date('2026-03-14'),
-      description: 'MRI Brain without Contrast',
-      bodyPart: 'BRAIN',
-      numSeries: 6,
-      numInstances: 180,
-    },
-  });
-
-  const studyPham = await prisma.study.create({
-    data: {
-      studyInstanceUid: '1.2.840.113654.2.70.1.1003',
-      patientId: patPham.id,
+      studyInstanceUid: '1.2.840.113704.1.111.11228.1696305185.1',
+      patientId: patBuiTinh.id,
       modality: 'CT',
-      studyDate: new Date('2026-03-16'),
-      description: 'CT Abdomen Pelvis',
-      bodyPart: 'ABDOMEN',
-      numSeries: 3,
-      numInstances: 450,
+      studyDate: new Date('2023-10-03'),
+      description: 'CT cột sống cổ có tiêm thuốc cản quang (tái khám)',
+      accessionNumber: '1780735',
+      institutionName: 'BV THONG NHAT',
+      referringPhysician: 'Nguyen Thi Dai Dong',
+      bodyPart: 'C-SPINE',
+      numSeries: 1,
+      numInstances: 520,
     },
   });
 
-  console.log('✓ Studies: 3 studies created');
+  const studyLam = await prisma.study.create({
+    data: {
+      studyInstanceUid: '1.2.840.113704.1.111.9072.1552979082.1',
+      patientId: patBuiLam.id,
+      modality: 'CT',
+      studyDate: new Date('2019-03-19'),
+      description: 'CT hàm-mặt có tiêm thuốc cản quang',
+      accessionNumber: '800660',
+      institutionName: 'BV THONG NHAT',
+      referringPhysician: 'Que Lan Huong',
+      bodyPart: 'FACE',
+      numSeries: 1,
+      numInstances: 341,
+    },
+  });
+
+  const studyThiem1 = await prisma.study.create({
+    data: {
+      studyInstanceUid: '1.2.840.113704.1.111.9500.1681976622.1',
+      patientId: patBuiThiem.id,
+      modality: 'CT',
+      studyDate: new Date('2023-04-20'),
+      description: 'CT cột sống cổ có tiêm thuốc cản quang',
+      accessionNumber: '1603264',
+      institutionName: 'BV THONG NHAT',
+      referringPhysician: 'Truong Hoang Viet',
+      bodyPart: 'C-SPINE',
+      numSeries: 1,
+      numInstances: 457,
+    },
+  });
+
+  const studyThiem2 = await prisma.study.create({
+    data: {
+      studyInstanceUid: '1.2.840.113704.1.111.5364.1685941505.1',
+      patientId: patBuiThiem.id,
+      modality: 'CT',
+      studyDate: new Date('2023-06-05'),
+      description: 'CT cột sống cổ có tiêm thuốc cản quang (tái khám)',
+      accessionNumber: '240000000000012909',
+      institutionName: 'BV THONG NHAT',
+      referringPhysician: 'Truong Hoang Viet',
+      bodyPart: 'C-SPINE',
+      numSeries: 1,
+      numInstances: 487,
+    },
+  });
+
+  console.log('✓ Studies: 5 studies created (real DICOM data)');
 
   // 8. Taxonomy
   const taxAbscess = await prisma.taxonomy.create({
@@ -230,44 +244,31 @@ async function main() {
   });
   console.log('✓ Taxonomy: 4 entries created');
 
-  // 9. Cases
+  // 9. Cases (matching real patient/study data)
   const case1 = await prisma.case.create({
     data: {
-      title: 'CT C-Spine - Abscess evaluation',
-      description: 'Đánh giá áp xe cột sống cổ trên CT có tiêm thuốc cản quang - BV Thống Nhất',
-      patientId: patBui.id,
+      title: 'CT C-Spine - Đánh giá áp xe',
+      description: 'Đánh giá áp xe cột sống cổ trên CT có tiêm thuốc cản quang - BV Thống Nhất (lần 1)',
+      patientId: patBuiTinh.id,
       organizationId: org.id,
       priority: 'high',
       status: 'in_progress',
       createdById: userLead.id,
-      slaDeadline: new Date('2026-03-22T18:00:00Z'),
+      slaDeadline: new Date('2026-03-25T18:00:00Z'),
     },
   });
   await prisma.caseStudyLink.create({
-    data: { caseId: case1.id, studyId: studyBui.id, role: 'primary' },
+    data: { caseId: case1.id, studyId: studyTinh1.id, role: 'primary' },
+  });
+  await prisma.caseStudyLink.create({
+    data: { caseId: case1.id, studyId: studyTinh2.id, role: 'comparison' },
   });
 
   const case2 = await prisma.case.create({
     data: {
-      title: 'MRI Brain - Tumor assessment',
-      description: 'Đánh giá khối u não trên MRI',
-      patientId: patTran.id,
-      organizationId: org.id,
-      priority: 'critical',
-      status: 'review',
-      createdById: userLead.id,
-      slaDeadline: new Date('2026-03-21T12:00:00Z'),
-    },
-  });
-  await prisma.caseStudyLink.create({
-    data: { caseId: case2.id, studyId: studyTran.id, role: 'primary' },
-  });
-
-  const case3 = await prisma.case.create({
-    data: {
-      title: 'CT Abdomen - Liver segmentation',
-      description: 'Phân đoạn gan trên CT bụng',
-      patientId: patPham.id,
+      title: 'CT Hàm-Mặt - Đánh giá tổn thương',
+      description: 'Đánh giá tổn thương hàm-mặt trên CT có tiêm thuốc cản quang',
+      patientId: patBuiLam.id,
       organizationId: org.id,
       priority: 'normal',
       status: 'open',
@@ -275,10 +276,29 @@ async function main() {
     },
   });
   await prisma.caseStudyLink.create({
-    data: { caseId: case3.id, studyId: studyPham.id, role: 'primary' },
+    data: { caseId: case2.id, studyId: studyLam.id, role: 'primary' },
   });
 
-  console.log('✓ Cases: 3 cases created');
+  const case3 = await prisma.case.create({
+    data: {
+      title: 'CT C-Spine - Theo dõi điều trị',
+      description: 'So sánh CT cột sống cổ lần 1 và lần 2 - theo dõi sau điều trị',
+      patientId: patBuiThiem.id,
+      organizationId: org.id,
+      priority: 'critical',
+      status: 'review',
+      createdById: userLead.id,
+      slaDeadline: new Date('2026-03-24T12:00:00Z'),
+    },
+  });
+  await prisma.caseStudyLink.create({
+    data: { caseId: case3.id, studyId: studyThiem1.id, role: 'primary' },
+  });
+  await prisma.caseStudyLink.create({
+    data: { caseId: case3.id, studyId: studyThiem2.id, role: 'follow_up' },
+  });
+
+  console.log('✓ Cases: 3 cases created (linked to real studies)');
 
   // 10. Tasks
   await prisma.task.create({
@@ -367,7 +387,7 @@ async function main() {
 
   console.log('\n✅ Seed complete!');
   console.log(`   Organization: ${org.name}`);
-  console.log('   Patients: 5 | Studies: 3 | Cases: 3 | Tasks: 4');
+  console.log('   Patients: 3 (real) | Studies: 5 (real DICOM) | Cases: 3 | Tasks: 4');
   console.log('   Users: 4 | Roles: 8 | AI Models: 2');
 }
 

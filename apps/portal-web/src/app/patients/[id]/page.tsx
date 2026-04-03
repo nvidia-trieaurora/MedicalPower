@@ -1,28 +1,69 @@
 'use client';
 
-import { use } from 'react';
+import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, Phone, MapPin, CreditCard } from 'lucide-react';
+import { ArrowLeft, Calendar, Phone, MapPin, CreditCard, ExternalLink, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { patientApi, type Patient } from '@/lib/api';
 import { mockPatients, mockCases, mockStudies } from '@/lib/mock-data';
+import { getViewerUrl } from '@/lib/viewer';
+import { useLocale } from '@/lib/locale-context';
 
 export default function PatientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const patient = mockPatients.find((p) => p.id === id);
+  const { t, locale } = useLocale();
+  const [patient, setPatient] = useState<Patient | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!patient) {
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await patientApi.get(id);
+        if (!cancelled) setPatient(res.data);
+      } catch {
+        const mock = mockPatients.find((p) => p.id === id);
+        if (!cancelled) {
+          setPatient(
+            mock ? { ...mock, organizationId: '', updatedAt: mock.createdAt } : null,
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">Không tìm thấy bệnh nhân</p>
+        <p className="text-muted-foreground">{t('common.table.loading')}</p>
       </div>
     );
   }
 
-  const patientCases = mockCases.filter((c) => c.patientId === patient.id);
-  const patientStudies = mockStudies.filter((s) => s.patientId === patient.id);
+  if (!patient) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <p className="text-muted-foreground">{t('patient.error.notFound')}</p>
+      </div>
+    );
+  }
+
+  const patientCases =
+    patient.cases !== undefined
+      ? patient.cases
+      : mockCases.filter((c) => c.patientId === patient.id);
+  const patientStudies =
+    patient.studies !== undefined
+      ? patient.studies
+      : mockStudies.filter((s) => s.patientId === patient.id);
 
   return (
     <div className="space-y-6">
@@ -37,55 +78,57 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
           <p className="font-mono text-sm text-muted-foreground">{patient.mrn}</p>
         </div>
         <Badge className={patient.status === 'active' ? 'bg-green-100 text-green-700' : ''}>
-          {patient.status === 'active' ? 'Hoạt động' : 'Ngừng'}
+          {patient.status === 'active' ? t('common.status.active') : t('common.status.stopped')}
         </Badge>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle className="text-base">Thông tin cá nhân</CardTitle>
+            <CardTitle className="text-base">{t('patient.detail.personalInfo')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center gap-2 text-sm">
               <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span>{new Date(patient.dob).toLocaleDateString('vi-VN')}</span>
+              <span>{new Date(patient.dob).toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-US')}</span>
               <span className="text-muted-foreground">
-                ({patient.gender === 'male' ? 'Nam' : 'Nữ'})
+                ({patient.gender === 'male' ? t('patient.field.gender.male') : t('patient.field.gender.female')})
               </span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <CreditCard className="h-4 w-4 text-muted-foreground" />
-              <span>{patient.nationalId}</span>
+              <span>{patient.nationalId ?? ''}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Phone className="h-4 w-4 text-muted-foreground" />
-              <span>{patient.phone}</span>
+              <span>{patient.phone ?? ''}</span>
             </div>
             <div className="flex items-start gap-2 text-sm">
               <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground" />
-              <span>{patient.address}</span>
+              <span>{patient.address ?? ''}</span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">Ca bệnh ({patientCases.length})</CardTitle>
+            <CardTitle className="text-base">{t('patient.detail.cases', { count: String(patientCases.length) })}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {patientCases.length === 0 && (
-              <p className="text-sm text-muted-foreground">Chưa có ca bệnh nào</p>
+              <p className="text-sm text-muted-foreground">{t('patient.detail.casesEmpty')}</p>
             )}
             {patientCases.map((c) => (
               <Link
                 key={c.id}
                 href={`/cases/${c.id}`}
-                className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-accent"
+                className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-accent/50"
               >
                 <div>
                   <p className="text-sm font-medium">{c.title}</p>
-                  <p className="text-xs text-muted-foreground">{c.description}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {(c as { description?: string }).description ?? ''}
+                  </p>
                 </div>
                 <Badge variant="secondary">{c.status.replace('_', ' ')}</Badge>
               </Link>
@@ -96,27 +139,39 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Nghiên cứu hình ảnh ({patientStudies.length})</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ImageIcon className="h-4 w-4" />
+            {t('patient.detail.studies', { count: String(patientStudies.length) })}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          {patientStudies.length === 0 && (
+            <p className="text-sm text-muted-foreground">{t('patient.detail.studiesEmpty')}</p>
+          )}
           {patientStudies.map((s) => (
             <div
               key={s.id}
-              className="flex items-center justify-between rounded-lg border p-3"
+              className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-accent/50"
             >
-              <div>
-                <p className="text-sm font-medium">{s.description}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">{s.description ?? ''}</p>
                 <p className="text-xs text-muted-foreground">
-                  {s.modality} &middot; {s.studyDate} &middot; {s.numSeries} series, {s.numInstances} instances
+                  <Badge variant="outline" className="mr-1.5 text-[10px] px-1.5 py-0">{s.modality}</Badge>
+                  {s.studyDate ?? ''} &middot; {s.numSeries} {t('common.unit.series')} &middot; {s.numInstances} {t('common.label.images')}
                 </p>
               </div>
               <a
-                href={`${process.env.NEXT_PUBLIC_OHIF_URL || 'http://localhost:8042'}/ohif/viewer?StudyInstanceUIDs=${s.studyInstanceUid}`}
+                href={getViewerUrl({
+                  studyInstanceUid: s.studyInstanceUid,
+                  patientName: patient.fullName,
+                })}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-muted"
               >
-                Mở Viewer
+                <Button size="sm" variant="default" className="gap-1.5 transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-primary/25 active:scale-95">
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  {t('common.action.openViewer')}
+                </Button>
               </a>
             </div>
           ))}

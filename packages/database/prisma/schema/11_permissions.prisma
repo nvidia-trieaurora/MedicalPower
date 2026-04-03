@@ -1,0 +1,21 @@
+// ============================================================
+// Domain: Permission Management
+// Owner: workflow-service
+// Admin can grant/revoke fine-grained permissions per user
+// ============================================================
+
+model UserPermission {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  permission  String    // annotate, review, create_case, diagnose, report, workflow_builder, view_all_tasks, admin_panel
+  grantedById String    @map("granted_by_id")
+  grantedAt   DateTime  @default(now()) @map("granted_at")
+  revokedAt   DateTime? @map("revoked_at")
+
+  user      User @relation("UserPermissions", fields: [userId], references: [id])
+  grantedBy User @relation("PermissionGranter", fields: [grantedById], references: [id])
+
+  @@unique([userId, permission])
+  @@index([userId])
+  @@map("user_permissions")
+}
