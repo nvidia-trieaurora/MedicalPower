@@ -54,6 +54,7 @@ model Task {
   lockExpiresAt DateTime? @map("lock_expires_at")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
 
   case               Case              @relation(fields: [caseId], references: [id])
   workflowRun        WorkflowRun?      @relation(fields: [workflowRunId], references: [id])
@@ -61,12 +62,29 @@ model Task {
   annotationSessions AnnotationSession[]
   reviewDecisions    ReviewDecision[]
   comments           TaskComment[]
+  assignments        TaskAssignment[]
 
   @@index([caseId])
   @@index([assignedToId])
   @@index([status])
   @@index([type])
   @@map("tasks")
+}
+
+model TaskAssignment {
+  id       String @id @default(uuid())
+  taskId   String @map("task_id")
+  userId   String @map("user_id")
+  role     String // project_manager, annotator, reviewer, diagnostician
+  taskType String @map("task_type") // annotate, review, diagnose, report
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation("TaskAssignments", fields: [userId], references: [id])
+
+  @@unique([taskId, userId])
+  @@index([taskId])
+  @@index([userId])
+  @@map("task_assignments")
 }
 
 model ReviewDecision {

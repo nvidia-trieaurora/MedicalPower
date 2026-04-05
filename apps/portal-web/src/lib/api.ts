@@ -185,6 +185,21 @@ export interface Case {
   _count?: { tasks: number };
 }
 
+export interface TaskAssignment {
+  id: string;
+  taskId: string;
+  userId: string;
+  role: string;
+  taskType: string;
+  user?: { id: string; fullName: string; email: string };
+}
+
+export interface TaskAssignmentInput {
+  userId: string;
+  role: string;
+  taskType: string;
+}
+
 export interface Task {
   id: string;
   caseId: string;
@@ -198,6 +213,7 @@ export interface Task {
   slaDeadline: string | null;
   createdAt: string;
   assignedTo?: { id: string; fullName: string } | null;
+  assignments?: TaskAssignment[];
   case?: {
     id: string;
     title: string;
@@ -265,8 +281,18 @@ export const taskApi = {
     return workflowApi.get<PaginatedResponse<Task>>(`/tasks${qs ? `?${qs}` : ''}`);
   },
   get: (id: string) => workflowApi.get<Task>(`/tasks/${id}`),
+  create: (data: {
+    caseId: string;
+    type: string;
+    priority?: string;
+    assignedToId?: string;
+    slaDeadline?: string;
+    workflowRunId?: string;
+    assignments?: TaskAssignmentInput[];
+  }) => workflowApi.post<Task>('/tasks', data),
   transition: (id: string, action: string, userId?: string) =>
     workflowApi.patch<Task>(`/tasks/${id}/transition`, { action, userId }),
+  delete: (id: string) => workflowApi.delete<Task>(`/tasks/${id}`),
 };
 
 export const dashboardApi = {
@@ -309,8 +335,18 @@ export interface WorkflowTemplateSummary {
   name: string;
   description: string | null;
   version: string;
+  organizationId?: string;
+  stateMachineDef?: any;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export const workflowTemplateApi = {
   list: () => workflowApi.get<WorkflowTemplateSummary[]>('/workflow-templates'),
+  get: (id: string) => workflowApi.get<WorkflowTemplateSummary>(`/workflow-templates/${id}`),
+  create: (data: { name: string; description?: string; stateMachineDef: any; organizationId: string }) =>
+    workflowApi.post<WorkflowTemplateSummary>('/workflow-templates', data),
+  update: (id: string, data: { name?: string; description?: string; stateMachineDef?: any }) =>
+    workflowApi.patch<WorkflowTemplateSummary>(`/workflow-templates/${id}`, data),
+  delete: (id: string) => workflowApi.delete(`/workflow-templates/${id}`),
 };

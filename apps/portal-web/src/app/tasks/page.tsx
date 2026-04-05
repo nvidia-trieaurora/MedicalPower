@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ExternalLink, Filter, Play, Send, Eye, Plus } from 'lucide-react';
+import { ExternalLink, Filter, Play, Send, Eye, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +19,7 @@ import { mockTasks, type Task as MockTask } from '@/lib/mock-data';
 import { getViewerUrl } from '@/lib/viewer';
 import { useLocale } from '@/lib/locale-context';
 import { useToast } from '@/components/ui/toast';
+import { usePermissions } from '@/hooks/use-permissions';
 
 type TaskRow = MockTask | ApiTask;
 
@@ -71,7 +72,7 @@ const statusColor: Record<string, string> = {
   completed: 'bg-green-100 text-green-700',
 };
 
-function TaskCard({ task, onRefresh }: { task: TaskRow; onRefresh: () => void }) {
+function TaskCard({ task, onRefresh, canDelete }: { task: TaskRow; onRefresh: () => void; canDelete: boolean }) {
   const { locale, t } = useLocale();
   const { showToast } = useToast();
   const [actionLoading, setActionLoading] = useState(false);
@@ -84,6 +85,19 @@ function TaskCard({ task, onRefresh }: { task: TaskRow; onRefresh: () => void })
       onRefresh();
     } catch {
       showToast({ type: 'error', title: vi ? 'Thao tác thất bại' : 'Action failed' });
+    }
+    setActionLoading(false);
+  };
+
+  const handleDelete = async () => {
+    if (!confirm(t('workflow.task.deleteConfirm'))) return;
+    setActionLoading(true);
+    try {
+      await taskApi.delete(task.id);
+      showToast({ type: 'success', title: t('workflow.task.deleteSuccess') });
+      onRefresh();
+    } catch {
+      showToast({ type: 'error', title: t('workflow.task.deleteFailed') });
     }
     setActionLoading(false);
   };
@@ -167,6 +181,12 @@ function TaskCard({ task, onRefresh }: { task: TaskRow; onRefresh: () => void })
             </Button>
           </a>
         )}
+
+        {canDelete && !['in_progress', 'in_review'].includes(task.status) && (
+          <Button size="sm" variant="ghost" className="gap-1 text-destructive hover:text-destructive hover:bg-destructive/10" disabled={actionLoading} onClick={handleDelete}>
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -174,6 +194,8 @@ function TaskCard({ task, onRefresh }: { task: TaskRow; onRefresh: () => void })
 
 export default function TasksPage() {
   const { t } = useLocale();
+  const { hasPermission } = usePermissions();
+  const canDelete = hasPermission('create_case') || hasPermission('admin_panel');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [tasks, setTasks] = useState<TaskRow[]>(mockTasks);
 
@@ -243,19 +265,19 @@ export default function TasksPage() {
             </Card>
           )}
           {filterByType(myTasks).map((task) => (
-            <TaskCard key={task.id} task={task} onRefresh={refreshTasks} />
+            <TaskCard key={task.id} task={task} onRefresh={refreshTasks} canDelete={canDelete} />
           ))}
         </TabsContent>
 
         <TabsContent value="active" className="mt-4 space-y-3">
           {filterByType(activeTasks).map((task) => (
-            <TaskCard key={task.id} task={task} onRefresh={refreshTasks} />
+            <TaskCard key={task.id} task={task} onRefresh={refreshTasks} canDelete={canDelete} />
           ))}
         </TabsContent>
 
         <TabsContent value="completed" className="mt-4 space-y-3">
           {filterByType(completedTasks).map((task) => (
-            <TaskCard key={task.id} task={task} onRefresh={refreshTasks} />
+            <TaskCard key={task.id} task={task} onRefresh={refreshTasks} canDelete={canDelete} />
           ))}
         </TabsContent>
       </Tabs>

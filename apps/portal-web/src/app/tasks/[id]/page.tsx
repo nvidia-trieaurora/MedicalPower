@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ExternalLink, User, Clock, Tag, Play, Send, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, ExternalLink, User, Clock, Tag, Play, Send, CheckCircle, XCircle, Loader2, Trash2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { getViewerUrl } from '@/lib/viewer';
 import { useLocale } from '@/lib/locale-context';
 import { useToast } from '@/components/ui/toast';
 import { TaskChat } from '@/components/task/TaskChat';
+import { usePermissions } from '@/hooks/use-permissions';
 
 const priorityColor: Record<string, string> = {
   critical: 'bg-red-100 text-red-800', high: 'bg-orange-100 text-orange-800',
@@ -27,10 +28,13 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   const { id } = use(params);
   const { locale, t } = useLocale();
   const { showToast } = useToast();
+  const { hasPermission } = usePermissions();
+  const canDelete = hasPermission('create_case') || hasPermission('admin_panel');
   const [task, setTask] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const vi = locale === 'vi';
+  const router = (typeof window !== 'undefined') ? { push: (url: string) => window.location.href = url } : null;
 
   const fetchTask = async () => {
     try {
@@ -50,6 +54,19 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
       await fetchTask();
     } catch {
       showToast({ type: 'error', title: vi ? 'Thất bại' : 'Failed' });
+    }
+    setActionLoading(false);
+  };
+
+  const handleDelete = async () => {
+    if (!confirm(t('workflow.task.deleteConfirm'))) return;
+    setActionLoading(true);
+    try {
+      await taskApi.delete(id);
+      showToast({ type: 'success', title: t('workflow.task.deleteSuccess') });
+      router?.push('/tasks');
+    } catch {
+      showToast({ type: 'error', title: t('workflow.task.deleteFailed') });
     }
     setActionLoading(false);
   };
@@ -140,9 +157,40 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                     <CheckCircle className="h-4 w-4" />{vi ? 'Hoàn thành' : 'Complete'}
                   </Button>
                 )}
+
+                {canDelete && !['in_progress', 'in_review'].includes(task.status) && (
+                  <Button variant="destructive" onClick={handleDelete} disabled={actionLoading} className="gap-1.5">
+                    <Trash2 className="h-4 w-4" />{t('workflow.task.delete')}
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
+
+          {/* Team Assignments */}
+          {task.assignments && task.assignments.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4" />{t('workflow.task.assignment.title')}</CardTitle></CardHeader>
+              <CardContent>
+                <div className="divide-y rounded-lg border">
+                  {task.assignments.map((a: { id: string; role: string; taskType: string; user?: { id: string; fullName: string } }) => (
+                    <div key={a.id} className="flex items-center gap-3 px-4 py-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                        {a.user?.fullName?.charAt(0) || '?'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{a.user?.fullName || '—'}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {t('workflow.task.assignment.role.' + a.role)} &middot; {t('workflow.task.type.' + a.taskType)}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="text-xs">{t('workflow.task.assignment.role.' + a.role)}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Right: Chat */}

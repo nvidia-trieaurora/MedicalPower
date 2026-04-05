@@ -27,6 +27,7 @@ model User {
   permissions        UserPermission[]    @relation("UserPermissions")
   grantedPermissions UserPermission[]    @relation("PermissionGranter")
   taskComments       TaskComment[]       @relation("TaskComments")
+  taskAssignments    TaskAssignment[]    @relation("TaskAssignments")
 
   @@map("users")
 }

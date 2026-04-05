@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Patch, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { TaskService } from './task.service';
+import { TaskService, type AssignmentInput } from './task.service';
 
 @ApiTags('tasks')
 @Controller('api/v1/tasks')
@@ -28,8 +28,16 @@ export class TaskController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Create a new task' })
-  create(@Body() body: { caseId: string; type: string; priority?: string; assignedToId?: string; slaDeadline?: string; workflowRunId?: string }) {
+  @ApiOperation({ summary: 'Create a new task with optional assignments' })
+  create(@Body() body: {
+    caseId: string;
+    type: string;
+    priority?: string;
+    assignedToId?: string;
+    slaDeadline?: string;
+    workflowRunId?: string;
+    assignments?: AssignmentInput[];
+  }) {
     return this.service.create({
       caseId: body.caseId,
       type: body.type,
@@ -37,11 +45,12 @@ export class TaskController {
       assignedToId: body.assignedToId,
       slaDeadline: body.slaDeadline ? new Date(body.slaDeadline) : undefined,
       workflowRunId: body.workflowRunId,
+      assignments: body.assignments,
     });
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get task by ID' })
+  @ApiOperation({ summary: 'Get task by ID with assignments' })
   findById(@Param('id') id: string) {
     return this.service.findById(id);
   }
@@ -59,5 +68,12 @@ export class TaskController {
     @Body() body: { action: string; userId?: string },
   ) {
     return this.service.transition(id, body.action, body.userId);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Soft-delete a task (admin/leader only)' })
+  delete(@Param('id') id: string) {
+    return this.service.softDelete(id);
   }
 }
